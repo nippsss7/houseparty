@@ -10,7 +10,12 @@ const config: ExpoConfig = {
   userInterfaceStyle: "light",
   ios: {
     supportsTablet: true,
-    bundleIdentifier: "com.houseparty.app",
+    // Unique to this developer account — "com.houseparty.app" is already
+    // registered to another Apple team and can never be used by this app.
+    bundleIdentifier: "com.nippunsingla.houseparty",
+    // Personal (free) Apple ID team for device dev builds; replace with the
+    // paid Apple Developer team before TestFlight/App Store distribution.
+    appleTeamId: "BPAL2Q35S8",
     config: {
       usesNonExemptEncryption: false,
     },
@@ -20,7 +25,7 @@ const config: ExpoConfig = {
     },
   },
   android: {
-    package: "com.houseparty.app",
+    package: "com.nippunsingla.houseparty",
     adaptiveIcon: {
       backgroundColor: "#E6F4FE",
       foregroundImage: "./assets/android-icon-foreground.png",

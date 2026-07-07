@@ -1,3 +1,4 @@
+import { File } from "expo-file-system";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 
 import { supabase } from "@/services/supabase";
@@ -23,10 +24,11 @@ export async function compressImage(uri: string, maxDimension = 1600) {
  * it, since private buckets need signed URLs instead).
  */
 export async function uploadImageToBucket(bucket: string, path: string, localUri: string) {
-  const response = await fetch(localUri);
-  const arrayBuffer = await response.arrayBuffer();
+  // Read via expo-file-system's File API — RN's fetch() is unreliable for
+  // file:// URIs on physical devices (fails with "Network request failed").
+  const bytes = await new File(localUri).bytes();
 
-  const { error } = await supabase.storage.from(bucket).upload(path, arrayBuffer, {
+  const { error } = await supabase.storage.from(bucket).upload(path, bytes, {
     contentType: "image/jpeg",
     upsert: true,
   });

@@ -29,27 +29,41 @@ export function useAuthBootstrap() {
 
   useEffect(() => {
     let profileChannel: ReturnType<typeof supabase.channel> | null = null;
+    let subscribedUserId: string | null = null;
+    // Auth events fire in bursts (INITIAL_SESSION + getSession at startup,
+    // TOKEN_REFRESHED periodically). Concurrent runs would grab the same named
+    // channel and throw "cannot add postgres_changes callbacks after
+    // subscribe()", so runs are serialized and same-user runs are no-ops.
+    let syncQueue: Promise<void> = Promise.resolve();
 
-    async function syncProfileSubscription(userId: string | null) {
-      if (profileChannel) {
-        await supabase.removeChannel(profileChannel);
-        profileChannel = null;
-      }
-      if (!userId) {
-        setProfile(null);
-        return;
-      }
+    function syncProfileSubscription(userId: string | null) {
+      syncQueue = syncQueue
+        .then(async () => {
+          if (userId === subscribedUserId) return;
 
-      setProfile(await fetchProfile(userId));
+          if (profileChannel) {
+            await supabase.removeChannel(profileChannel);
+            profileChannel = null;
+          }
+          subscribedUserId = userId;
+          if (!userId) {
+            setProfile(null);
+            return;
+          }
 
-      profileChannel = supabase
-        .channel(`profile-${userId}`)
-        .on(
-          "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${userId}` },
-          (payload) => setProfile(payload.new as Profile)
-        )
-        .subscribe();
+          setProfile(await fetchProfile(userId));
+
+          profileChannel = supabase
+            .channel(`profile-${userId}`)
+            .on(
+              "postgres_changes",
+              { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${userId}` },
+              (payload) => setProfile(payload.new as Profile)
+            )
+            .subscribe();
+        })
+        .catch((err) => console.error("Profile subscription sync failed:", err));
+      return syncQueue;
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {

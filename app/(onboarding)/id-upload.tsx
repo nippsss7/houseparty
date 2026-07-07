@@ -44,6 +44,7 @@ export default function IdUploadScreen() {
       });
       router.replace("/(onboarding)/pending-review");
     } catch (err) {
+      console.error("ID verification submit failed:", err);
       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
     } finally {
       setIsSubmitting(false);
