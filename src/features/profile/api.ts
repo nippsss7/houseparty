@@ -12,6 +12,30 @@ export async function uploadAvatar(userId: string, localUri: string) {
   return data.publicUrl;
 }
 
+export async function updateProfile(params: {
+  userId: string;
+  fullName: string;
+  username: string;
+  bio?: string;
+  avatarUrl?: string;
+}) {
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      full_name: params.fullName,
+      username: params.username,
+      bio: params.bio || null,
+      ...(params.avatarUrl ? { avatar_url: params.avatarUrl } : {}),
+    })
+    .eq("id", params.userId);
+  if (error) throw error;
+}
+
+export async function deleteMyAccount() {
+  const { error } = await supabase.rpc("delete_my_account");
+  if (error) throw error;
+}
+
 export async function completeProfileSetup(params: {
   userId: string;
   fullName: string;

@@ -1,8 +1,9 @@
 import { useRouter } from "expo-router";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
+import { deleteMyAccount } from "@/features/profile/api";
 import { useAuth } from "@/hooks/useAuth";
 import { colors, radii, spacing, typography } from "@/lib/theme";
 
@@ -53,16 +54,57 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+      <View style={styles.menu}>
+        <Button
+          label="Edit profile"
+          variant="secondary"
+          onPress={() => router.push("/settings/edit-profile")}
+        />
+        <Button
+          label="My reviews"
+          variant="secondary"
+          onPress={() => router.push("/settings/reviews")}
+        />
+        {isAdmin && (
+          <Button
+            label="Admin: review verifications"
+            variant="secondary"
+            onPress={() => router.push("/admin/verifications")}
+          />
+        )}
+      </View>
+
       <View style={styles.spacer} />
 
-      {isAdmin && (
-        <Button
-          label="Admin: review verifications"
-          variant="secondary"
-          onPress={() => router.push("/admin/verifications")}
-        />
-      )}
       <Button label="Sign out" variant="secondary" onPress={signOut} />
+      <Button
+        label="Delete account"
+        variant="ghost"
+        onPress={() =>
+          Alert.alert(
+            "Delete your account?",
+            "This permanently removes your profile, events, requests and reviews. This cannot be undone.",
+            [
+              { text: "Keep my account", style: "cancel" },
+              {
+                text: "Delete forever",
+                style: "destructive",
+                onPress: async () => {
+                  try {
+                    await deleteMyAccount();
+                    await signOut();
+                  } catch (err) {
+                    Alert.alert(
+                      "Could not delete account",
+                      err instanceof Error ? err.message : "Please try again."
+                    );
+                  }
+                },
+              },
+            ]
+          )
+        }
+      />
     </Screen>
   );
 }
@@ -97,5 +139,6 @@ const styles = StyleSheet.create({
   },
   ratingValue: { ...typography.heading },
   ratingLabel: { ...typography.caption, textAlign: "center" },
+  menu: { marginTop: spacing.xl, gap: spacing.sm },
   spacer: { flex: 1 },
 });

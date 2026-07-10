@@ -83,6 +83,7 @@ export async function fetchNearbyEvents(params: {
   radiusMeters?: number;
   category?: EventCategory | null;
   maxPrice?: number | null;
+  search?: string | null;
 }) {
   const { data, error } = await supabase.rpc("nearby_events", {
     p_lat: params.lat,
@@ -90,6 +91,7 @@ export async function fetchNearbyEvents(params: {
     p_radius_meters: params.radiusMeters ?? 25000,
     p_category: params.category ?? undefined,
     p_max_price: params.maxPrice ?? undefined,
+    p_search: params.search || undefined,
   });
   if (error) throw error;
   return data;

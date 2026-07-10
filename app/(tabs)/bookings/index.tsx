@@ -80,7 +80,9 @@ function GuestList({ userId }: { userId?: string }) {
       renderItem={({ item }: { item: MyRequest }) => {
         const status = BOOKING_STATUS_LABELS[item.status as BookingStatus];
         const startAt = item.event ? new Date(item.event.start_at) : null;
-        const cancellable = item.status === "pending" || item.status === "accepted";
+        const eventEnded = item.event ? new Date(item.event.end_at) < new Date() : false;
+        const reviewable = item.status === "accepted" && eventEnded;
+        const cancellable = (item.status === "pending" || item.status === "accepted") && !eventEnded;
         return (
           <Pressable
             style={styles.card}
@@ -105,6 +107,13 @@ function GuestList({ userId }: { userId?: string }) {
                 variant="secondary"
                 onPress={() => cancel.mutate(item.id)}
                 loading={cancel.isPending && cancel.variables === item.id}
+              />
+            )}
+            {reviewable && (
+              <Button
+                label="Review the host"
+                variant="secondary"
+                onPress={() => router.push(`/review/${item.id}`)}
               />
             )}
           </Pressable>

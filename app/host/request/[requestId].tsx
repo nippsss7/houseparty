@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/Button";
@@ -12,6 +12,7 @@ import type { BookingStatus } from "@/types/domain";
 
 export default function RequestDetailScreen() {
   const { requestId } = useLocalSearchParams<{ requestId: string }>();
+  const router = useRouter();
   const { session } = useAuth();
   const queryClient = useQueryClient();
   useBookingRealtime(session?.user.id);
@@ -124,6 +125,15 @@ export default function RequestDetailScreen() {
             </View>
           </View>
         )}
+        {request.status === "accepted" &&
+          !!request.event?.end_at &&
+          new Date(request.event.end_at) < new Date() && (
+            <Button
+              label="Review this guest"
+              variant="secondary"
+              onPress={() => router.push(`/review/${request.id}`)}
+            />
+          )}
       </ScrollView>
     </>
   );

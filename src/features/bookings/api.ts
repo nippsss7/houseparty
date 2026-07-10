@@ -109,7 +109,7 @@ export async function fetchRequestDetail(requestId: string) {
   const { data, error } = await supabase
     .from("booking_requests")
     .select(
-      "*, guest:profiles!booking_requests_guest_id_fkey(id, full_name, username, avatar_url, bio, guest_rating_avg, guest_rating_count, verification_status, created_at), event:events!booking_requests_event_id_fkey(id, title, capacity, current_rsvp_count, start_at)"
+      "*, guest:profiles!booking_requests_guest_id_fkey(id, full_name, username, avatar_url, bio, guest_rating_avg, guest_rating_count, verification_status, created_at), event:events!booking_requests_event_id_fkey(id, title, capacity, current_rsvp_count, start_at, end_at)"
     )
     .eq("id", requestId)
     .single();

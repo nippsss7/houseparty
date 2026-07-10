@@ -361,6 +361,71 @@ export type Database = {
         }
         Relationships: []
       }
+      reviews: {
+        Row: {
+          booking_id: string
+          comment: string | null
+          created_at: string
+          direction: string
+          event_id: string
+          id: string
+          rating: number
+          reviewee_id: string
+          reviewer_id: string
+        }
+        Insert: {
+          booking_id: string
+          comment?: string | null
+          created_at?: string
+          direction: string
+          event_id: string
+          id?: string
+          rating: number
+          reviewee_id: string
+          reviewer_id: string
+        }
+        Update: {
+          booking_id?: string
+          comment?: string | null
+          created_at?: string
+          direction?: string
+          event_id?: string
+          id?: string
+          rating?: number
+          reviewee_id?: string
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "booking_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewee_id_fkey"
+            columns: ["reviewee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
@@ -579,6 +644,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_my_account: { Args: never; Returns: undefined }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
         | {
@@ -721,6 +787,7 @@ export type Database = {
           p_lng: number
           p_max_price?: number
           p_radius_meters?: number
+          p_search?: string
           p_start_after?: string
         }
         Returns: {
@@ -1453,6 +1520,26 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "id_verifications"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      submit_review: {
+        Args: { p_booking_id: string; p_comment?: string; p_rating: number }
+        Returns: {
+          booking_id: string
+          comment: string | null
+          created_at: string
+          direction: string
+          event_id: string
+          id: string
+          rating: number
+          reviewee_id: string
+          reviewer_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "reviews"
           isOneToOne: true
           isSetofReturn: false
         }
