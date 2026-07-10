@@ -67,6 +67,7 @@ const config: ExpoConfig = {
       },
     ],
     "./plugins/withDisableUserScriptSandboxing",
+    "./plugins/withoutPushEntitlement",
   ],
   experiments: {
     typedRoutes: true,
