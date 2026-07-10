@@ -1,13 +1,19 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { StepHeader } from "@/components/StepHeader";
 import { TextField } from "@/components/TextField";
+import {
+  reverseGeocode,
+  suggestAddresses,
+  type AddressSuggestion,
+} from "@/features/events/geocoding";
 import { eventLocationScheduleSchema } from "@/features/events/schemas";
 import { Mapbox } from "@/services/mapbox";
 import { useCreateEventStore } from "@/stores/createEventStore";
@@ -27,9 +33,7 @@ export default function CreateEventWhereWhenScreen() {
   const saved = useCreateEventStore((s) => s.locationSchedule);
   const setLocationSchedule = useCreateEventStore((s) => s.setLocationSchedule);
 
-  const [pin, setPin] = useState<[number, number] | null>(
-    saved ? [saved.lng, saved.lat] : null
-  );
+  const [pin, setPin] = useState<[number, number] | null>(saved ? [saved.lng, saved.lat] : null);
   const [address, setAddress] = useState(saved?.address ?? "");
   const [city, setCity] = useState(saved?.city ?? "");
   const [startAt, setStartAt] = useState<Date>(saved?.startAt ?? defaultStart());
@@ -37,24 +41,74 @@ export default function CreateEventWhereWhenScreen() {
     saved?.endAt ?? new Date(defaultStart().getTime() + 4 * 60 * 60 * 1000)
   );
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
+  // While true the user is actively typing, so the suggestions dropdown may
+  // show; programmatic fills (suggestion tap, pin drag) turn it off.
+  const [isTypingAddress, setIsTypingAddress] = useState(false);
+  const [debouncedAddress, setDebouncedAddress] = useState("");
   const cameraRef = useRef<Mapbox.Camera>(null);
+  const userLocation = useRef<[number, number] | null>(null);
 
   useEffect(() => {
-    if (pin) return;
+    const timer = setTimeout(() => setDebouncedAddress(address.trim()), 350);
+    return () => clearTimeout(timer);
+  }, [address]);
+
+  useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") return;
       const position = await Location.getLastKnownPositionAsync();
       if (position) {
-        cameraRef.current?.setCamera({
-          centerCoordinate: [position.coords.longitude, position.coords.latitude],
-          zoomLevel: 12,
-          animationDuration: 0,
-        });
+        userLocation.current = [position.coords.longitude, position.coords.latitude];
+        if (!pin) {
+          cameraRef.current?.setCamera({
+            centerCoordinate: userLocation.current,
+            zoomLevel: 12,
+            animationDuration: 0,
+          });
+        }
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const { data: suggestions = [], isFetching: isSuggesting } = useQuery({
+    queryKey: ["address-suggest", debouncedAddress],
+    queryFn: () => suggestAddresses(debouncedAddress, pin ?? userLocation.current),
+    enabled: isTypingAddress && debouncedAddress.length >= 4,
+    staleTime: 60_000,
+  });
+
+  const applySuggestion = (suggestion: AddressSuggestion) => {
+    setIsTypingAddress(false);
+    setAddress(suggestion.addressLine);
+    if (suggestion.city) setCity(suggestion.city);
+    const coordinates: [number, number] = [suggestion.lng, suggestion.lat];
+    setPin(coordinates);
+    cameraRef.current?.setCamera({
+      centerCoordinate: coordinates,
+      zoomLevel: 15,
+      animationDuration: 400,
+    });
+  };
+
+  const onPinMoved = async (coordinates: [number, number]) => {
+    setIsTypingAddress(false);
+    setPin(coordinates);
+    setIsReverseGeocoding(true);
+    try {
+      const nearest = await reverseGeocode(coordinates[0], coordinates[1]);
+      if (nearest) {
+        setAddress(nearest.addressLine);
+        if (nearest.city) setCity(nearest.city);
+      }
+    } catch (err) {
+      console.error("Reverse geocode failed:", err);
+    } finally {
+      setIsReverseGeocoding(false);
+    }
+  };
 
   const onNext = () => {
     const parsed = eventLocationScheduleSchema.safeParse({
@@ -83,7 +137,58 @@ export default function CreateEventWhereWhenScreen() {
     <Screen scroll>
       <StepHeader step={3} total={4} title="Where & when" />
 
-      <Text style={typography.label}>Drop a pin on your place</Text>
+      <View style={styles.addressWrap}>
+        <TextField
+          label="Street address"
+          placeholder="Start typing to search…"
+          value={address}
+          onChangeText={(text) => {
+            setAddress(text);
+            setIsTypingAddress(true);
+          }}
+          error={fieldErrors.address}
+          autoCorrect={false}
+        />
+        {isTypingAddress && debouncedAddress.length >= 4 && (
+          <View style={styles.suggestions}>
+            {isSuggesting && suggestions.length === 0 ? (
+              <View style={styles.suggestionRow}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : (
+              suggestions.map((suggestion) => (
+                <Pressable
+                  key={suggestion.id}
+                  style={({ pressed }) => [styles.suggestionRow, pressed && styles.suggestionPressed]}
+                  onPress={() => applySuggestion(suggestion)}
+                >
+                  <Text style={styles.suggestionText} numberOfLines={2}>
+                    {suggestion.fullAddress}
+                  </Text>
+                </Pressable>
+              ))
+            )}
+            {!isSuggesting && suggestions.length === 0 && (
+              <View style={styles.suggestionRow}>
+                <Text style={styles.suggestionEmpty}>No matches — keep typing or drop a pin</Text>
+              </View>
+            )}
+          </View>
+        )}
+      </View>
+
+      <TextField
+        label="City"
+        placeholder="Sydney"
+        value={city}
+        onChangeText={setCity}
+        error={fieldErrors.city}
+      />
+
+      <View style={styles.mapLabelRow}>
+        <Text style={typography.label}>Pin the exact spot</Text>
+        {isReverseGeocoding && <ActivityIndicator size="small" color={colors.primary} />}
+      </View>
       <View style={styles.mapWrap}>
         <Mapbox.MapView
           style={styles.map}
@@ -92,7 +197,7 @@ export default function CreateEventWhereWhenScreen() {
           attributionPosition={{ bottom: 4, right: 4 }}
           onPress={(feature) => {
             const geometry = feature.geometry as GeoJSON.Point;
-            setPin([geometry.coordinates[0], geometry.coordinates[1]]);
+            onPinMoved([geometry.coordinates[0], geometry.coordinates[1]]);
           }}
         >
           <Mapbox.Camera
@@ -100,7 +205,15 @@ export default function CreateEventWhereWhenScreen() {
             defaultSettings={{ centerCoordinate: pin ?? DEFAULT_CENTER, zoomLevel: pin ? 14 : 10 }}
           />
           {pin && (
-            <Mapbox.PointAnnotation id="event-pin" coordinate={pin}>
+            <Mapbox.PointAnnotation
+              id="event-pin"
+              coordinate={pin}
+              draggable
+              onDragEnd={(feature) => {
+                const geometry = feature.geometry as GeoJSON.Point;
+                onPinMoved([geometry.coordinates[0], geometry.coordinates[1]]);
+              }}
+            >
               <View style={styles.pin} />
             </Mapbox.PointAnnotation>
           )}
@@ -110,23 +223,9 @@ export default function CreateEventWhereWhenScreen() {
         <Text style={styles.error}>{fieldErrors.lat ?? fieldErrors.lng}</Text>
       )}
       <Text style={styles.mapHint}>
-        The exact pin is only shared with accepted guests; others see the area.
+        Search an address or tap the map — drag the pin to fine-tune. Only accepted guests see the
+        exact spot.
       </Text>
-
-      <TextField
-        label="Street address"
-        placeholder="12 Example St"
-        value={address}
-        onChangeText={setAddress}
-        error={fieldErrors.address}
-      />
-      <TextField
-        label="City"
-        placeholder="Sydney"
-        value={city}
-        onChangeText={setCity}
-        error={fieldErrors.city}
-      />
 
       <View style={styles.pickerRow}>
         <Text style={typography.label}>Starts</Text>
@@ -166,6 +265,26 @@ export default function CreateEventWhereWhenScreen() {
 }
 
 const styles = StyleSheet.create({
+  addressWrap: { position: "relative", zIndex: 10 },
+  suggestions: {
+    marginTop: -spacing.md,
+    marginBottom: spacing.md,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated,
+    overflow: "hidden",
+  },
+  suggestionRow: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  suggestionPressed: { backgroundColor: colors.surface },
+  suggestionText: { ...typography.body, fontSize: 14 },
+  suggestionEmpty: { ...typography.caption, color: colors.textFaint },
+  mapLabelRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   mapWrap: {
     height: 220,
     borderRadius: radii.md,

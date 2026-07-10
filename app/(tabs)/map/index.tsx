@@ -1,4 +1,4 @@
-import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
+import BottomSheet, { BottomSheetFlatList, BottomSheetView } from "@gorhom/bottom-sheet";
 import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
@@ -36,6 +36,7 @@ export default function MapScreen() {
     radius: 25000,
   });
   const [selected, setSelected] = useState<NearbyEvent | null>(null);
+  const [sheetMode, setSheetMode] = useState<"preview" | "list">("preview");
   const [locationGranted, setLocationGranted] = useState(false);
 
   useEffect(() => {
@@ -118,7 +119,8 @@ export default function MapScreen() {
       const event = events.find((candidate) => candidate.id === feature.properties?.id);
       if (event) {
         setSelected(event);
-        sheetRef.current?.expand();
+        setSheetMode("preview");
+        sheetRef.current?.snapToIndex(0);
         cameraRef.current?.setCamera({
           centerCoordinate: [event.lng, event.lat],
           animationDuration: 350,
@@ -127,6 +129,13 @@ export default function MapScreen() {
     },
     [events]
   );
+
+  const openNearbyList = useCallback(() => {
+    if (events.length === 0) return;
+    setSelected(null);
+    setSheetMode("list");
+    sheetRef.current?.snapToIndex(1);
+  }, [events.length]);
 
   return (
     <View style={styles.container}>
@@ -193,29 +202,49 @@ export default function MapScreen() {
       </Mapbox.MapView>
 
       <SafeAreaView style={styles.overlay} edges={["top"]} pointerEvents="box-none">
-        <View style={styles.badge}>
+        <Pressable
+          style={({ pressed }) => [styles.badge, pressed && styles.badgePressed]}
+          onPress={openNearbyList}
+        >
           <Text style={styles.badgeText}>
             {events.length === 0
               ? "No parties around here yet"
-              : `${events.length} ${events.length === 1 ? "party" : "parties"} nearby`}
+              : `${events.length} ${events.length === 1 ? "party" : "parties"} nearby ▾`}
           </Text>
-        </View>
+        </Pressable>
       </SafeAreaView>
 
       <BottomSheet
         ref={sheetRef}
         index={-1}
-        snapPoints={[240]}
+        snapPoints={[240, "72%"]}
         enablePanDownToClose
         onClose={() => setSelected(null)}
         backgroundStyle={styles.sheetBackground}
         handleIndicatorStyle={styles.sheetHandle}
       >
-        <BottomSheetView style={styles.sheetContent}>
-          {selected && (
-            <EventPreview event={selected} onOpen={() => router.push(`/event/${selected.id}`)} />
-          )}
-        </BottomSheetView>
+        {sheetMode === "list" ? (
+          <BottomSheetFlatList
+            data={events}
+            keyExtractor={(event: NearbyEvent) => event.id}
+            contentContainerStyle={styles.listContent}
+            ListHeaderComponent={
+              <Text style={styles.listTitle}>
+                {events.length} {events.length === 1 ? "party" : "parties"} nearby
+              </Text>
+            }
+            ItemSeparatorComponent={() => <View style={styles.listSeparator} />}
+            renderItem={({ item }: { item: NearbyEvent }) => (
+              <EventPreview event={item} onOpen={() => router.push(`/event/${item.id}`)} />
+            )}
+          />
+        ) : (
+          <BottomSheetView style={styles.sheetContent}>
+            {selected && (
+              <EventPreview event={selected} onOpen={() => router.push(`/event/${selected.id}`)} />
+            )}
+          </BottomSheetView>
+        )}
       </BottomSheet>
     </View>
   );
@@ -271,7 +300,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  badgePressed: { opacity: 0.7 },
   badgeText: { ...typography.caption, color: colors.text, fontWeight: "600" },
+  listContent: { paddingHorizontal: spacing.md, paddingBottom: spacing.xl },
+  listTitle: { ...typography.heading, marginBottom: spacing.md, marginTop: spacing.xs },
+  listSeparator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginVertical: spacing.md,
+  },
   sheetBackground: { backgroundColor: colors.surfaceElevated },
   sheetHandle: { backgroundColor: colors.textFaint },
   sheetContent: { flex: 1, paddingHorizontal: spacing.md, paddingBottom: spacing.md },
