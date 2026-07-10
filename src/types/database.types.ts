@@ -39,6 +39,67 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_requests: {
+        Row: {
+          created_at: string
+          event_id: string
+          guest_id: string
+          host_id: string
+          id: string
+          message: string | null
+          party_size: number
+          responded_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          guest_id: string
+          host_id: string
+          id?: string
+          message?: string | null
+          party_size?: number
+          responded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          guest_id?: string
+          host_id?: string
+          id?: string
+          message?: string | null
+          party_size?: number
+          responded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_requests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_requests_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_requests_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_photos: {
         Row: {
           created_at: string
@@ -468,6 +529,27 @@ export type Database = {
             }
             Returns: string
           }
+      cancel_booking_request: {
+        Args: { p_request_id: string }
+        Returns: {
+          created_at: string
+          event_id: string
+          guest_id: string
+          host_id: string
+          id: string
+          message: string | null
+          party_size: number
+          responded_at: string | null
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "booking_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
         | {
@@ -670,6 +752,48 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      request_to_join: {
+        Args: { p_event_id: string; p_message?: string; p_party_size: number }
+        Returns: {
+          created_at: string
+          event_id: string
+          guest_id: string
+          host_id: string
+          id: string
+          message: string | null
+          party_size: number
+          responded_at: string | null
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "booking_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      respond_to_booking: {
+        Args: { p_accept: boolean; p_request_id: string }
+        Returns: {
+          created_at: string
+          event_id: string
+          guest_id: string
+          host_id: string
+          id: string
+          message: string | null
+          party_size: number
+          responded_at: string | null
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "booking_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       review_id_verification: {
         Args: {
           p_approve: boolean

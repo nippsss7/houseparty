@@ -21,3 +21,4 @@ export type EventCategory =
   | "other";
 export type CancellationPolicy = "flexible" | "moderate" | "strict";
 export type EventStatus = "draft" | "published" | "cancelled" | "completed";
+export type BookingStatus = "pending" | "accepted" | "declined" | "cancelled";
