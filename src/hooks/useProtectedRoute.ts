@@ -39,13 +39,17 @@ export function useProtectedRoute() {
     const hasCompletedProfile = !!profile?.full_name && !!profile?.username;
     const status = profile?.verification_status ?? "unverified";
 
-    let requiredRoute: Href | null = null;
+    let requiredRoute: Extract<Href, string> | null = null;
     if (!hasCompletedProfile) requiredRoute = "/(onboarding)/profile-setup";
     else if (status === "unverified") requiredRoute = "/(onboarding)/id-upload";
     else if (status === "pending" || status === "rejected") requiredRoute = "/(onboarding)/pending-review";
 
     if (requiredRoute) {
-      if (pathname !== requiredRoute) router.replace(requiredRoute);
+      // usePathname() omits (group) segments, so strip them before comparing —
+      // comparing against the full route string never matches and causes
+      // redirect loops (e.g. bouncing users back to id-upload after submit).
+      const requiredPath = requiredRoute.replace(/\/\([^)]+\)/g, "");
+      if (pathname !== requiredPath) router.replace(requiredRoute);
       return;
     }
 

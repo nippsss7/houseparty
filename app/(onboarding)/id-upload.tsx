@@ -8,6 +8,7 @@ import { submitIdVerification } from "@/features/verification/api";
 import { documentTypeOptions } from "@/features/verification/schemas";
 import { useAuth } from "@/hooks/useAuth";
 import { useImagePicker } from "@/hooks/useImagePicker";
+import { useAuthStore } from "@/stores/authStore";
 import { colors, radii, spacing, typography } from "@/lib/theme";
 import type { DocumentType } from "@/types/domain";
 
@@ -42,6 +43,11 @@ export default function IdUploadScreen() {
         frontUri,
         backUri: backUri ?? undefined,
       });
+      // Reflect the RPC's status flip locally right away — the redirect guard
+      // reads the store, and waiting on the Realtime event would bounce the
+      // user back here first.
+      const { profile, setProfile } = useAuthStore.getState();
+      if (profile) setProfile({ ...profile, verification_status: "pending" });
       router.replace("/(onboarding)/pending-review");
     } catch (err) {
       console.error("ID verification submit failed:", err);
