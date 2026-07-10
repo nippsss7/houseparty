@@ -6,13 +6,15 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { useAuth, useAuthBootstrap } from "@/hooks/useAuth";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const queryClient = new QueryClient();
 
 function RootNavigator() {
   useAuthBootstrap();
   useProtectedRoute();
-  const { isInitializing } = useAuth();
+  const { isInitializing, session } = useAuth();
+  usePushNotifications(session?.user.id);
 
   if (isInitializing) return null;
 

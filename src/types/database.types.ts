@@ -100,6 +100,35 @@ export type Database = {
           },
         ]
       }
+      device_push_tokens: {
+        Row: {
+          expo_push_token: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          expo_push_token: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          expo_push_token?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_push_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_photos: {
         Row: {
           created_at: string
