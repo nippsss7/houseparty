@@ -31,7 +31,7 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="bookings/index"
-        options={{ title: "Bookings", tabBarIcon: () => <TabIcon emoji="📩" /> }}
+        options={{ title: "My Events", tabBarIcon: () => <TabIcon emoji="📩" /> }}
       />
       <Tabs.Screen
         name="profile/index"

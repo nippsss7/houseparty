@@ -28,7 +28,7 @@ export default function BookingsScreen() {
   return (
     <Screen padded={false}>
       <View style={styles.header}>
-        <Text style={typography.title}>Bookings</Text>
+        <Text style={typography.title}>My Events</Text>
         <View style={styles.segments}>
           <Segment label="My requests" active={mode === "guest"} onPress={() => setMode("guest")} />
           <Segment label="Hosting" active={mode === "host"} onPress={() => setMode("host")} />
@@ -142,7 +142,7 @@ function HostList({ userId }: { userId?: string }) {
         const startAt = new Date(item.start_at);
         const isPast = new Date(item.end_at) < new Date();
         return (
-          <Pressable style={styles.card} onPress={() => router.push(`/host/${item.id}`)}>
+          <Pressable style={styles.card} onPress={() => router.push(`/event/${item.id}`)}>
             <View style={styles.cardHeader}>
               <Text style={typography.heading} numberOfLines={1}>
                 {item.title}

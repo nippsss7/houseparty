@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -17,6 +17,7 @@ import { Button } from "@/components/Button";
 import {
   cancelBookingRequest,
   fetchMyRequestForEvent,
+  fetchRequestsForEvent,
   requestToJoin,
 } from "@/features/bookings/api";
 import { eventPhotoUrl, fetchEvent } from "@/features/events/api";
@@ -27,6 +28,7 @@ import { colors, radii, spacing, typography } from "@/lib/theme";
 
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const { session, isVerified } = useAuth();
   useBookingRealtime(session?.user.id);
 
@@ -41,6 +43,14 @@ export default function EventDetailScreen() {
     queryFn: () => fetchMyRequestForEvent(session!.user.id, id),
     enabled: !!id && !!session,
   });
+
+  const isHost = !!event && !!session && event.host_id === session.user.id;
+  const { data: hostRequests = [] } = useQuery({
+    queryKey: ["host-requests", "event", id],
+    queryFn: () => fetchRequestsForEvent(id),
+    enabled: isHost,
+  });
+  const pendingCount = hostRequests.filter((r) => r.status === "pending").length;
 
   if (isPending) {
     return (
@@ -156,7 +166,20 @@ export default function EventDetailScreen() {
 
           <View style={styles.ctaSpacer} />
           {isOwnEvent ? (
-            <Text style={styles.ownEventNote}>This is your event.</Text>
+            <Pressable
+              style={({ pressed }) => [styles.hostCta, pressed && styles.hostCtaPressed]}
+              onPress={() => router.push(`/host/${event.id}`)}
+            >
+              <Text style={styles.hostCtaText}>Guest requests</Text>
+              <View style={styles.hostCtaRight}>
+                {pendingCount > 0 && (
+                  <View style={styles.pendingBadge}>
+                    <Text style={styles.pendingBadgeText}>{pendingCount}</Text>
+                  </View>
+                )}
+                <Text style={styles.hostCtaChevron}>›</Text>
+              </View>
+            </Pressable>
           ) : (
             <RequestSection
               eventId={event.id}
@@ -349,7 +372,31 @@ const styles = StyleSheet.create({
   sectionTitle: { ...typography.heading, marginTop: spacing.lg },
   description: { ...typography.body, color: colors.textMuted, lineHeight: 24 },
   ctaSpacer: { height: spacing.lg },
-  ownEventNote: { ...typography.body, color: colors.textFaint, textAlign: "center" },
+  hostCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  hostCtaPressed: { opacity: 0.8 },
+  hostCtaText: { ...typography.body, fontWeight: "600" },
+  hostCtaRight: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  hostCtaChevron: { fontSize: 24, color: colors.textFaint, marginTop: -2 },
+  pendingBadge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  pendingBadgeText: { color: colors.white, fontSize: 13, fontWeight: "700" },
   requestCard: {
     backgroundColor: colors.surface,
     borderRadius: radii.md,
