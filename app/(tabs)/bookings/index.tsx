@@ -1,31 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import {
   cancelBookingRequest,
-  fetchHostRequests,
+  fetchMyHostedEvents,
   fetchMyRequests,
-  respondToBooking,
-  type HostRequest,
+  type HostedEvent,
   type MyRequest,
 } from "@/features/bookings/api";
 import { useAuth } from "@/hooks/useAuth";
+import { BOOKING_STATUS_LABELS } from "@/features/bookings/status";
 import { useBookingRealtime } from "@/hooks/useBookingRealtime";
 import { colors, radii, spacing, typography } from "@/lib/theme";
 import type { BookingStatus } from "@/types/domain";
 
 type Mode = "guest" | "host";
-
-const STATUS_LABELS: Record<BookingStatus, { label: string; color: string }> = {
-  pending: { label: "Pending", color: colors.warning },
-  accepted: { label: "Accepted", color: colors.success },
-  declined: { label: "Declined", color: colors.danger },
-  cancelled: { label: "Cancelled", color: colors.textFaint },
-};
 
 export default function BookingsScreen() {
   const { session } = useAuth();
@@ -85,7 +78,7 @@ function GuestList({ userId }: { userId?: string }) {
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.listContent}
       renderItem={({ item }: { item: MyRequest }) => {
-        const status = STATUS_LABELS[item.status as BookingStatus];
+        const status = BOOKING_STATUS_LABELS[item.status as BookingStatus];
         const startAt = item.event ? new Date(item.event.start_at) : null;
         const cancellable = item.status === "pending" || item.status === "accepted";
         return (
@@ -122,88 +115,56 @@ function GuestList({ userId }: { userId?: string }) {
 }
 
 function HostList({ userId }: { userId?: string }) {
-  const queryClient = useQueryClient();
+  const router = useRouter();
 
-  const { data: requests = [], isPending } = useQuery({
+  const { data: events = [], isPending } = useQuery({
     queryKey: ["host-requests", userId],
-    queryFn: () => fetchHostRequests(userId!),
+    queryFn: () => fetchMyHostedEvents(userId!),
     enabled: !!userId,
   });
 
-  const respond = useMutation({
-    mutationFn: ({ requestId, accept }: { requestId: string; accept: boolean }) =>
-      respondToBooking(requestId, accept),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["host-requests"] });
-      queryClient.invalidateQueries({ queryKey: ["event"] });
-    },
-  });
-
-  if (!isPending && requests.length === 0) {
+  if (!isPending && events.length === 0) {
     return (
       <EmptyState
-        emoji="📭"
-        title="No requests to review"
-        body="When guests ask to join your events, you'll accept or decline them here."
+        emoji="🏠"
+        title="You're not hosting yet"
+        body="Post an event from the Create tab — it will show up here with its guest requests."
       />
     );
   }
 
   return (
     <FlatList
-      data={requests}
+      data={events}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.listContent}
-      renderItem={({ item }: { item: HostRequest }) => {
-        const pending = item.status === "pending";
-        const status = STATUS_LABELS[item.status as BookingStatus];
-        const spotsLeft = item.event ? item.event.capacity - item.event.current_rsvp_count : 0;
+      renderItem={({ item }: { item: HostedEvent }) => {
+        const startAt = new Date(item.start_at);
+        const isPast = new Date(item.end_at) < new Date();
         return (
-          <View style={styles.card}>
-            <View style={styles.guestRow}>
-              {item.guest?.avatar_url ? (
-                <Image source={{ uri: item.guest.avatar_url }} style={styles.guestAvatar} />
-              ) : (
-                <View style={[styles.guestAvatar, styles.guestAvatarFallback]}>
-                  <Text style={styles.guestAvatarInitial}>
-                    {(item.guest?.full_name ?? "?").slice(0, 1).toUpperCase()}
-                  </Text>
+          <Pressable style={styles.card} onPress={() => router.push(`/host/${item.id}`)}>
+            <View style={styles.cardHeader}>
+              <Text style={typography.heading} numberOfLines={1}>
+                {item.title}
+              </Text>
+              {item.pendingCount > 0 && (
+                <View style={styles.pendingBadge}>
+                  <Text style={styles.pendingBadgeText}>{item.pendingCount}</Text>
                 </View>
-              )}
-              <View style={styles.guestInfo}>
-                <Text style={typography.body} numberOfLines={1}>
-                  {item.guest?.full_name ?? "Guest"}
-                </Text>
-                <Text style={styles.cardMeta} numberOfLines={1}>
-                  {item.event?.title} · party of {item.party_size}
-                </Text>
-              </View>
-              {!pending && (
-                <Text style={[styles.statusChip, { color: status.color }]}>{status.label}</Text>
               )}
             </View>
-            {!!item.message && <Text style={styles.guestMessage}>“{item.message}”</Text>}
-            {pending && (
-              <View style={styles.actions}>
-                <View style={styles.actionButton}>
-                  <Button
-                    label="Decline"
-                    variant="secondary"
-                    onPress={() => respond.mutate({ requestId: item.id, accept: false })}
-                    loading={respond.isPending && respond.variables?.requestId === item.id && !respond.variables.accept}
-                  />
-                </View>
-                <View style={styles.actionButton}>
-                  <Button
-                    label={spotsLeft >= item.party_size ? "Accept" : "No room"}
-                    onPress={() => respond.mutate({ requestId: item.id, accept: true })}
-                    disabled={spotsLeft < item.party_size}
-                    loading={respond.isPending && respond.variables?.requestId === item.id && respond.variables.accept}
-                  />
-                </View>
-              </View>
-            )}
-          </View>
+            <Text style={styles.cardMeta}>
+              {item.city} ·{" "}
+              {startAt.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+              {isPast ? " · ended" : ""}
+            </Text>
+            <Text style={styles.cardMeta}>
+              {item.current_rsvp_count}/{item.capacity} spots filled
+              {item.pendingCount > 0
+                ? ` · ${item.pendingCount} pending ${item.pendingCount === 1 ? "request" : "requests"}`
+                : " · no pending requests"}
+            </Text>
+          </Pressable>
         );
       }}
     />
@@ -249,21 +210,19 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.sm,
   },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", gap: spacing.sm },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: spacing.sm },
   cardMeta: { ...typography.caption, color: colors.textMuted },
   statusChip: { ...typography.label },
-  guestRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  guestAvatar: { width: 40, height: 40, borderRadius: 20 },
-  guestAvatarFallback: {
-    backgroundColor: colors.primaryMuted,
+  pendingBadge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 6,
   },
-  guestAvatarInitial: { ...typography.body, color: colors.primary, fontWeight: "700" },
-  guestInfo: { flex: 1 },
-  guestMessage: { ...typography.body, color: colors.textMuted, fontStyle: "italic" },
-  actions: { flexDirection: "row", gap: spacing.sm },
-  actionButton: { flex: 1 },
+  pendingBadgeText: { color: colors.white, fontSize: 13, fontWeight: "700" },
   empty: {
     flex: 1,
     alignItems: "center",

@@ -24,6 +24,8 @@ function RootNavigator() {
       <Stack.Screen name="(onboarding)" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="event/[id]" options={{ headerShown: true, title: "" }} />
+      <Stack.Screen name="host/[eventId]" options={{ headerShown: true, title: "Requests" }} />
+      <Stack.Screen name="host/request/[requestId]" options={{ headerShown: true, title: "Request" }} />
       <Stack.Screen name="admin/verifications" options={{ headerShown: true, title: "Review verifications" }} />
     </Stack>
   );
