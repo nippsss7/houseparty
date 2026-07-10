@@ -25,9 +25,27 @@ async function pickFrom(source: "library" | "camera") {
   return result.assets[0].uri;
 }
 
+async function pickMultiple(maxCount: number) {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!permission.granted) {
+    Alert.alert("Permission needed", "Please allow photo library access in Settings to continue.");
+    return [];
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ["images"],
+    quality: 0.9,
+    allowsMultipleSelection: true,
+    selectionLimit: maxCount,
+  });
+  if (result.canceled) return [];
+  return result.assets.map((asset) => asset.uri);
+}
+
 export function useImagePicker() {
   const pickFromLibrary = useCallback(() => pickFrom("library"), []);
   const pickFromCamera = useCallback(() => pickFrom("camera"), []);
+  const pickMultipleFromLibrary = useCallback((maxCount: number) => pickMultiple(maxCount), []);
 
   const pickWithSourceChoice = useCallback(() => {
     return new Promise<string | null>((resolve) => {
@@ -39,5 +57,5 @@ export function useImagePicker() {
     });
   }, []);
 
-  return { pickFromLibrary, pickFromCamera, pickWithSourceChoice };
+  return { pickFromLibrary, pickFromCamera, pickWithSourceChoice, pickMultipleFromLibrary };
 }

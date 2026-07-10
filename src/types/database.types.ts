@@ -39,6 +39,127 @@ export type Database = {
   }
   public: {
     Tables: {
+      event_photos: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          position: number
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          position?: number
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          position?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_photos_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          address: string
+          age_restriction: number | null
+          cancellation_policy: string
+          capacity: number
+          category: string
+          city: string
+          created_at: string
+          currency: string
+          current_rsvp_count: number
+          description: string
+          end_at: string
+          host_id: string
+          house_rules: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          location: unknown
+          price_per_person: number
+          search_vector: unknown
+          start_at: string
+          status: string
+          tags: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          age_restriction?: number | null
+          cancellation_policy?: string
+          capacity: number
+          category: string
+          city: string
+          created_at?: string
+          currency?: string
+          current_rsvp_count?: number
+          description: string
+          end_at: string
+          host_id: string
+          house_rules?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          location: unknown
+          price_per_person?: number
+          search_vector?: unknown
+          start_at: string
+          status?: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          age_restriction?: number | null
+          cancellation_policy?: string
+          capacity?: number
+          category?: string
+          city?: string
+          created_at?: string
+          currency?: string
+          current_rsvp_count?: number
+          description?: string
+          end_at?: string
+          host_id?: string
+          house_rules?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          location?: unknown
+          price_per_person?: number
+          search_vector?: unknown
+          start_at?: string
+          status?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       id_verifications: {
         Row: {
           back_image_path: string | null
@@ -482,6 +603,33 @@ export type Database = {
       is_admin: { Args: { uid: string }; Returns: boolean }
       is_verified: { Args: { uid: string }; Returns: boolean }
       longtransactionsenabled: { Args: never; Returns: boolean }
+      nearby_events: {
+        Args: {
+          p_category?: string
+          p_lat: number
+          p_lng: number
+          p_max_price?: number
+          p_radius_meters?: number
+          p_start_after?: string
+        }
+        Returns: {
+          capacity: number
+          category: string
+          city: string
+          cover_photo_path: string
+          currency: string
+          current_rsvp_count: number
+          distance_meters: number
+          end_at: string
+          host_id: string
+          id: string
+          lat: number
+          lng: number
+          price_per_person: number
+          start_at: string
+          title: string
+        }[]
+      }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
         | { Args: { use_typmod?: boolean }; Returns: string }

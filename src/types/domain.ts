@@ -9,3 +9,15 @@ export type VerificationStatus = "unverified" | "pending" | "verified" | "reject
 export type UserRole = "user" | "admin";
 export type DocumentType = "passport" | "drivers_license" | "national_id";
 export type IdVerificationReviewStatus = "pending" | "approved" | "rejected";
+
+export type EventCategory =
+  | "house_party"
+  | "rooftop"
+  | "pool_party"
+  | "dinner_party"
+  | "game_night"
+  | "music"
+  | "outdoor"
+  | "other";
+export type CancellationPolicy = "flexible" | "moderate" | "strict";
+export type EventStatus = "draft" | "published" | "cancelled" | "completed";

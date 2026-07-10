@@ -26,7 +26,7 @@ export default function TabsLayout() {
         options={{ title: "Explore", tabBarIcon: () => <TabIcon emoji="🔍" /> }}
       />
       <Tabs.Screen
-        name="create/index"
+        name="create"
         options={{ title: "Create", tabBarIcon: () => <TabIcon emoji="➕" /> }}
       />
       <Tabs.Screen
