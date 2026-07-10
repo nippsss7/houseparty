@@ -53,7 +53,16 @@ export function usePushNotifications(userId: string | undefined) {
 
   useEffect(() => {
     if (!userId) return;
-    registerToken(userId).catch((err) => console.error("Push registration failed:", err));
+    registerToken(userId).catch((err) => {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes("aps-environment")) {
+        // Expected on free personal Apple teams — push needs a paid
+        // Apple Developer membership; everything else works without it.
+        console.log("Push unavailable: requires a paid Apple Developer team");
+        return;
+      }
+      console.error("Push registration failed:", err);
+    });
   }, [userId]);
 
   useEffect(() => {
