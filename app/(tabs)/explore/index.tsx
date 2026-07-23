@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 
+import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { eventPhotoUrl, fetchNearbyEvents, type NearbyEvent } from "@/features/events/api";
 import { eventCategoryOptions } from "@/features/events/schemas";
@@ -51,7 +52,12 @@ export default function ExploreScreen() {
     })();
   }, []);
 
-  const { data: events = [], isFetching } = useQuery({
+  const {
+    data: events = [],
+    isFetching,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["nearby-events", "explore", center[0].toFixed(2), center[1].toFixed(2), debouncedSearch, category, maxPrice],
     queryFn: () =>
       fetchNearbyEvents({
@@ -111,6 +117,13 @@ export default function ExploreScreen() {
       {isFetching && events.length === 0 ? (
         <View style={styles.empty}>
           <ActivityIndicator color={colors.primary} />
+        </View>
+      ) : isError ? (
+        <View style={styles.empty}>
+          <Text style={styles.emptyEmoji}>📡</Text>
+          <Text style={typography.heading}>Couldn't load events</Text>
+          <Text style={styles.emptyBody}>Check your connection and try again.</Text>
+          <Button label="Retry" variant="secondary" onPress={() => refetch()} />
         </View>
       ) : events.length === 0 ? (
         <View style={styles.empty}>

@@ -16,6 +16,20 @@ async function fetchProfile(userId: string) {
   return data;
 }
 
+function timeout(ms: number, message: string) {
+  return new Promise<never>((_, reject) => setTimeout(() => reject(new Error(message)), ms));
+}
+
+// Module-level so the "Try again" button on the bootstrap-failure screen
+// (rendered outside useAuthBootstrap's owning component) can re-trigger the
+// same initial-load logic without a full remount. Safe because
+// useAuthBootstrap is documented to mount once near the app root.
+let retryInitialLoad: (() => void) | null = null;
+
+export function retryAuthBootstrap() {
+  retryInitialLoad?.();
+}
+
 /**
  * Mount once near the app root. Keeps authStore in sync with Supabase auth
  * state and subscribes to Realtime updates on the signed-in user's own
@@ -26,6 +40,7 @@ export function useAuthBootstrap() {
   const setSession = useAuthStore((s) => s.setSession);
   const setProfile = useAuthStore((s) => s.setProfile);
   const setInitializing = useAuthStore((s) => s.setInitializing);
+  const setBootstrapError = useAuthStore((s) => s.setBootstrapError);
 
   useEffect(() => {
     let profileChannel: ReturnType<typeof supabase.channel> | null = null;
@@ -66,10 +81,35 @@ export function useAuthBootstrap() {
       return syncQueue;
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      syncProfileSubscription(session?.user.id ?? null).finally(() => setInitializing(false));
-    });
+    // getSession() hitting a dead host (e.g. a paused Supabase project) can
+    // reject with an unhandled-feeling network error, or in some RN network
+    // states just hang. Without a catch + timeout here, isInitializing would
+    // never flip false and the app would show a blank screen forever with no
+    // way to recover short of force-quitting.
+    async function loadInitialSession() {
+      setInitializing(true);
+      setBootstrapError(null);
+      try {
+        const {
+          data: { session },
+        } = await Promise.race([
+          supabase.auth.getSession(),
+          timeout(15000, "Connection timed out"),
+        ]);
+        setSession(session);
+        await syncProfileSubscription(session?.user.id ?? null);
+      } catch (err) {
+        console.error("Auth bootstrap failed:", err);
+        setBootstrapError(err instanceof Error ? err.message : "Could not connect");
+      } finally {
+        setInitializing(false);
+      }
+    }
+
+    retryInitialLoad = () => {
+      loadInitialSession();
+    };
+    loadInitialSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
@@ -77,6 +117,7 @@ export function useAuthBootstrap() {
     });
 
     return () => {
+      retryInitialLoad = null;
       authListener.subscription.unsubscribe();
       if (profileChannel) supabase.removeChannel(profileChannel);
     };
@@ -88,11 +129,13 @@ export function useAuth() {
   const session = useAuthStore((s) => s.session);
   const profile = useAuthStore((s) => s.profile);
   const isInitializing = useAuthStore((s) => s.isInitializing);
+  const bootstrapError = useAuthStore((s) => s.bootstrapError);
 
   return {
     session,
     profile,
     isInitializing,
+    bootstrapError,
     isAuthenticated: !!session,
     isAdmin: profile?.role === "admin",
     isVerified: profile?.verification_status === "verified",

@@ -14,6 +14,7 @@ import {
 } from "react-native";
 
 import { Button } from "@/components/Button";
+import { FullScreenState } from "@/components/FullScreenState";
 import {
   cancelBookingRequest,
   fetchMyRequestForEvent,
@@ -33,7 +34,12 @@ export default function EventDetailScreen() {
   const { session, isVerified } = useAuth();
   useBookingRealtime(session?.user.id);
 
-  const { data: event, isPending, error } = useQuery({
+  const {
+    data: event,
+    isPending,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["event", id],
     queryFn: () => fetchEvent(id),
     enabled: !!id,
@@ -62,10 +68,17 @@ export default function EventDetailScreen() {
   }
 
   if (error || !event) {
+    // PGRST116 = PostgREST's "no rows" code from .single() — a real 404, not
+    // a network hiccup, so no retry button makes sense for it.
+    const notFound = (error as { code?: string } | null)?.code === "PGRST116";
     return (
-      <View style={styles.center}>
-        <Text style={typography.body}>This event isn't available anymore.</Text>
-      </View>
+      <FullScreenState
+        emoji={notFound ? "🔍" : "📡"}
+        title={notFound ? "Event not found" : "Couldn't load this event"}
+        body={notFound ? "It may have been removed or the link is wrong." : "Check your connection and try again."}
+        actionLabel={notFound ? undefined : "Retry"}
+        onAction={notFound ? undefined : () => refetch()}
+      />
     );
   }
 

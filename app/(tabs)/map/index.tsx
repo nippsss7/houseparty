@@ -55,7 +55,11 @@ export default function MapScreen() {
     })();
   }, []);
 
-  const { data: events = [] } = useQuery({
+  const {
+    data: events = [],
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: [
       "nearby-events",
       searchArea.center[0].toFixed(3),
@@ -204,12 +208,14 @@ export default function MapScreen() {
       <SafeAreaView style={styles.overlay} edges={["top"]} pointerEvents="box-none">
         <Pressable
           style={({ pressed }) => [styles.badge, pressed && styles.badgePressed]}
-          onPress={openNearbyList}
+          onPress={isError ? () => refetch() : openNearbyList}
         >
           <Text style={styles.badgeText}>
-            {events.length === 0
-              ? "No parties around here yet"
-              : `${events.length} ${events.length === 1 ? "party" : "parties"} nearby ▾`}
+            {isError
+              ? "Couldn't load parties — tap to retry"
+              : events.length === 0
+                ? "No parties around here yet"
+                : `${events.length} ${events.length === 1 ? "party" : "parties"} nearby ▾`}
           </Text>
         </Pressable>
       </SafeAreaView>

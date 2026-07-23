@@ -29,14 +29,21 @@ export default function AdminVerificationsScreen() {
 
 function VerificationList() {
   const queryClient = useQueryClient();
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["pending-verifications"],
     queryFn: fetchPendingVerifications,
   });
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (isLoading) return <Text style={styles.muted}>Loading…</Text>;
-  if (error) return <Text style={styles.errorText}>Failed to load verifications.</Text>;
+  if (error) {
+    return (
+      <View style={styles.errorBox}>
+        <Text style={styles.errorText}>Failed to load verifications.</Text>
+        <Button label="Retry" variant="secondary" onPress={() => refetch()} />
+      </View>
+    );
+  }
   if (!data || data.length === 0) {
     return <Text style={styles.muted}>No pending verifications right now.</Text>;
   }
@@ -186,6 +193,7 @@ const styles = StyleSheet.create({
   heading: { ...typography.title, marginTop: spacing.xl, marginBottom: spacing.lg },
   muted: { ...typography.body, color: colors.textMuted, textAlign: "center", marginTop: spacing.xl },
   errorText: { color: colors.danger, textAlign: "center", marginTop: spacing.xl },
+  errorBox: { alignItems: "center", gap: spacing.md, marginTop: spacing.xl },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radii.md,

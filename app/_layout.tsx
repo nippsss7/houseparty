@@ -4,17 +4,41 @@ import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { useAuth, useAuthBootstrap } from "@/hooks/useAuth";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { FullScreenState } from "@/components/FullScreenState";
+import { retryAuthBootstrap, useAuth, useAuthBootstrap } from "@/hooks/useAuth";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Network blips (the Supabase-project-asleep case, a dropped hotspot
+      // hop, etc.) are common enough here to deserve automatic backoff
+      // instead of surfacing on the first failed attempt.
+      retry: 2,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
+    },
+  },
+});
 
 function RootNavigator() {
   useAuthBootstrap();
   useProtectedRoute();
-  const { isInitializing, session } = useAuth();
+  const { isInitializing, bootstrapError, session } = useAuth();
   usePushNotifications(session?.user.id);
+
+  if (bootstrapError && !isInitializing) {
+    return (
+      <FullScreenState
+        emoji="📡"
+        title="Can't connect"
+        body={bootstrapError}
+        actionLabel="Try again"
+        onAction={retryAuthBootstrap}
+      />
+    );
+  }
 
   if (isInitializing) return null;
 
@@ -43,7 +67,9 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <StatusBar style="light" />
-          <RootNavigator />
+          <ErrorBoundary>
+            <RootNavigator />
+          </ErrorBoundary>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
