@@ -65,12 +65,24 @@ export default function ProfileScreen() {
           variant="secondary"
           onPress={() => router.push("/settings/reviews")}
         />
+        <Button
+          label="Blocked users"
+          variant="secondary"
+          onPress={() => router.push("/settings/blocked-users")}
+        />
         {isAdmin && (
-          <Button
-            label="Admin: review verifications"
-            variant="secondary"
-            onPress={() => router.push("/admin/verifications")}
-          />
+          <>
+            <Button
+              label="Admin: review verifications"
+              variant="secondary"
+              onPress={() => router.push("/admin/verifications")}
+            />
+            <Button
+              label="Admin: open reports"
+              variant="secondary"
+              onPress={() => router.push("/admin/reports")}
+            />
+          </>
         )}
       </View>
 

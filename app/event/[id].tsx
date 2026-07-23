@@ -22,6 +22,7 @@ import {
 } from "@/features/bookings/api";
 import { eventPhotoUrl, fetchEvent } from "@/features/events/api";
 import { cancellationPolicyOptions, eventCategoryOptions } from "@/features/events/schemas";
+import { showSafetyMenu } from "@/features/safety/actions";
 import { useAuth } from "@/hooks/useAuth";
 import { useBookingRealtime } from "@/hooks/useBookingRealtime";
 import { colors, radii, spacing, typography } from "@/lib/theme";
@@ -78,9 +79,34 @@ export default function EventDetailScreen() {
   const spotsLeft = event.capacity - event.current_rsvp_count;
   const addressRevealed = isOwnEvent || myRequest?.status === "accepted";
 
+  const onOpenSafetyMenu = () => {
+    if (!event.host) return;
+    showSafetyMenu(
+      router,
+      {
+        userId: event.host.id,
+        userName: event.host.full_name ?? "this host",
+        eventId: event.id,
+        eventTitle: event.title,
+      },
+      () => router.back()
+    );
+  };
+
   return (
     <>
-      <Stack.Screen options={{ title: event.title }} />
+      <Stack.Screen
+        options={{
+          title: event.title,
+          headerRight: isOwnEvent
+            ? undefined
+            : () => (
+                <Pressable onPress={onOpenSafetyMenu} hitSlop={8} style={styles.headerMenuButton}>
+                  <Text style={styles.headerMenuDots}>•••</Text>
+                </Pressable>
+              ),
+        }}
+      />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {photos.length > 0 ? (
           <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.gallery}>
@@ -372,6 +398,8 @@ const styles = StyleSheet.create({
   sectionTitle: { ...typography.heading, marginTop: spacing.lg },
   description: { ...typography.body, color: colors.textMuted, lineHeight: 24 },
   ctaSpacer: { height: spacing.lg },
+  headerMenuButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  headerMenuDots: { fontSize: 20, color: colors.text, fontWeight: "700" },
   hostCta: {
     flexDirection: "row",
     alignItems: "center",

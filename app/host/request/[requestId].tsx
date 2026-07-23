@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/Button";
 import { fetchRequestDetail, respondToBooking } from "@/features/bookings/api";
 import { useAuth } from "@/hooks/useAuth";
 import { BOOKING_STATUS_LABELS } from "@/features/bookings/status";
+import { showSafetyMenu } from "@/features/safety/actions";
 import { useBookingRealtime } from "@/hooks/useBookingRealtime";
 import { colors, radii, spacing, typography } from "@/lib/theme";
 import type { BookingStatus } from "@/types/domain";
@@ -48,9 +49,27 @@ export default function RequestDetailScreen() {
     ? new Date(guest.created_at).toLocaleDateString(undefined, { month: "long", year: "numeric" })
     : null;
 
+  const onOpenSafetyMenu = () => {
+    if (!guest) return;
+    showSafetyMenu(
+      router,
+      { userId: guest.id, userName: guest.full_name ?? "this guest" },
+      () => router.back()
+    );
+  };
+
   return (
     <>
-      <Stack.Screen options={{ title: "Request" }} />
+      <Stack.Screen
+        options={{
+          title: "Request",
+          headerRight: () => (
+            <Pressable onPress={onOpenSafetyMenu} hitSlop={8} style={styles.headerMenuButton}>
+              <Text style={styles.headerMenuDots}>•••</Text>
+            </Pressable>
+          ),
+        }}
+      />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.profileCard}>
           {guest?.avatar_url ? (
@@ -157,6 +176,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: colors.background,
   },
+  headerMenuButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  headerMenuDots: { fontSize: 20, color: colors.text, fontWeight: "700" },
   profileCard: {
     alignItems: "center",
     gap: spacing.xs,
