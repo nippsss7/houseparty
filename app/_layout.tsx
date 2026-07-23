@@ -1,10 +1,17 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { LogBox } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+// @rnmapbox/maps logs its own "MapLoad error" whenever a tile fetch fails
+// (e.g. offline) via a dev-only console.error → LogBox toast. It's noise:
+// our own map-badge error state already tells the user the same thing, and
+// LogBox doesn't exist outside development builds anyway.
+LogBox.ignoreLogs(["MapLoad error"]);
 import { FullScreenState } from "@/components/FullScreenState";
 import { retryAuthBootstrap, useAuth, useAuthBootstrap } from "@/hooks/useAuth";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
