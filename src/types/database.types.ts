@@ -307,6 +307,38 @@ export type Database = {
           },
         ]
       }
+      notification_log: {
+        Row: {
+          id: string
+          related_id: string
+          sent_at: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          related_id: string
+          sent_at?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          related_id?: string
+          sent_at?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -319,6 +351,12 @@ export type Database = {
           host_rating_avg: number
           host_rating_count: number
           id: string
+          last_active_at: string
+          last_lat: number | null
+          last_lng: number | null
+          last_location_at: string | null
+          notify_email: boolean
+          notify_new_events: boolean
           phone: string | null
           role: string
           updated_at: string
@@ -336,6 +374,12 @@ export type Database = {
           host_rating_avg?: number
           host_rating_count?: number
           id: string
+          last_active_at?: string
+          last_lat?: number | null
+          last_lng?: number | null
+          last_location_at?: string | null
+          notify_email?: boolean
+          notify_new_events?: boolean
           phone?: string | null
           role?: string
           updated_at?: string
@@ -353,6 +397,12 @@ export type Database = {
           host_rating_avg?: number
           host_rating_count?: number
           id?: string
+          last_active_at?: string
+          last_lat?: number | null
+          last_lng?: number | null
+          last_location_at?: string | null
+          notify_email?: boolean
+          notify_new_events?: boolean
           phone?: string | null
           role?: string
           updated_at?: string
@@ -1635,7 +1685,12 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      touch_last_active: { Args: never; Returns: undefined }
       unlockrows: { Args: { "": string }; Returns: number }
+      update_my_location: {
+        Args: { p_lat: number; p_lng: number }
+        Returns: undefined
+      }
       updategeometrysrid: {
         Args: {
           catalogn_name: string

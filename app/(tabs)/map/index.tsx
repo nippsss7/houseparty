@@ -8,6 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { eventPhotoUrl, fetchNearbyEvents, type NearbyEvent } from "@/features/events/api";
 import { eventCategoryOptions } from "@/features/events/schemas";
+import { updateMyLocation } from "@/features/notifications/api";
 import { Mapbox } from "@/services/mapbox";
 import { colors, radii, spacing, typography } from "@/lib/theme";
 
@@ -51,6 +52,11 @@ export default function MapScreen() {
         const center: [number, number] = [position.coords.longitude, position.coords.latitude];
         cameraRef.current?.setCamera({ centerCoordinate: center, zoomLevel: 11, animationDuration: 0 });
         setSearchArea({ center, radius: 25000 });
+        // Best-effort — powers "new party near you" push targeting. Not
+        // critical to the map itself, so a failure here shouldn't surface.
+        updateMyLocation(position.coords.latitude, position.coords.longitude).catch((err) =>
+          console.error("Failed to update location for notifications:", err)
+        );
       }
     })();
   }, []);

@@ -71,6 +71,11 @@ export default function ProfileScreen() {
           variant="secondary"
           onPress={() => router.push("/settings/blocked-users")}
         />
+        <Button
+          label="Notification settings"
+          variant="secondary"
+          onPress={() => router.push("/settings/notifications")}
+        />
         {isAdmin && (
           <>
             <Button

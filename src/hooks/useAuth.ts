@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 import { signOut as signOutApi } from "@/features/auth/api";
+import { touchLastActive } from "@/features/notifications/api";
 import { supabase } from "@/services/supabase";
 import { useAuthStore } from "@/stores/authStore";
 import type { Database } from "@/types/database.types";
@@ -98,6 +99,9 @@ export function useAuthBootstrap() {
         ]);
         setSession(session);
         await syncProfileSubscription(session?.user.id ?? null);
+        // Marks the user as "recently active" so the weekly digest email
+        // skips people who are already using the app day-to-day.
+        if (session) touchLastActive().catch((err) => console.error("touchLastActive failed:", err));
       } catch (err) {
         console.error("Auth bootstrap failed:", err);
         setBootstrapError(err instanceof Error ? err.message : "Could not connect");

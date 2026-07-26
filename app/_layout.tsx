@@ -61,6 +61,7 @@ function RootNavigator() {
       <Stack.Screen name="settings/edit-profile" options={{ headerShown: true, title: "Edit profile" }} />
       <Stack.Screen name="settings/reviews" options={{ headerShown: true, title: "My reviews" }} />
       <Stack.Screen name="settings/blocked-users" options={{ headerShown: true, title: "Blocked users" }} />
+      <Stack.Screen name="settings/notifications" options={{ headerShown: true, title: "Notification settings" }} />
       <Stack.Screen name="report" options={{ headerShown: true, title: "Report" }} />
       <Stack.Screen name="admin/verifications" options={{ headerShown: true, title: "Review verifications" }} />
       <Stack.Screen name="admin/reports" options={{ headerShown: true, title: "Open reports" }} />
