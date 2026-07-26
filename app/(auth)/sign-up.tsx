@@ -2,13 +2,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { StyleSheet, Text, View } from "react-native";
+import { Linking, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { TextField } from "@/components/TextField";
 import { signUpWithEmail } from "@/features/auth/api";
 import { signUpSchema, type SignUpFormValues } from "@/features/auth/schemas";
+import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "@/lib/legal";
 import { colors, spacing, typography } from "@/lib/theme";
 
 export default function SignUpScreen() {
@@ -92,6 +93,17 @@ export default function SignUpScreen() {
         )}
       />
       {!!submitError && <Text style={styles.error}>{submitError}</Text>}
+      <Text style={styles.legalText}>
+        By creating an account, you agree to our{" "}
+        <Text style={styles.legalLink} onPress={() => Linking.openURL(TERMS_OF_SERVICE_URL)}>
+          Terms of Service
+        </Text>{" "}
+        and{" "}
+        <Text style={styles.legalLink} onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
+          Privacy Policy
+        </Text>
+        .
+      </Text>
       <Button label="Create account" onPress={handleSubmit(onSubmit)} loading={isSubmitting} />
       <View style={styles.footer}>
         <Text style={styles.footerText}>Already have an account? </Text>
@@ -106,6 +118,13 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   heading: { ...typography.title, marginTop: spacing.xl, marginBottom: spacing.lg },
   error: { color: colors.danger, marginBottom: spacing.md },
+  legalText: {
+    ...typography.caption,
+    color: colors.textMuted,
+    textAlign: "center",
+    marginBottom: spacing.md,
+  },
+  legalLink: { color: colors.primary, fontWeight: "600" },
   footer: { flexDirection: "row", justifyContent: "center", paddingVertical: spacing.xl },
   footerText: { color: colors.textMuted },
   footerLink: { color: colors.primary, fontWeight: "700" },

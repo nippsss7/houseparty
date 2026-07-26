@@ -3,6 +3,7 @@ import type { ExpoConfig } from "expo/config";
 const config: ExpoConfig = {
   name: "HouseParty",
   slug: "houseparty",
+  owner: "nippsss7",
   scheme: "houseparty",
   version: "1.0.0",
   orientation: "portrait",

@@ -1,10 +1,11 @@
 import { useRouter } from "expo-router";
-import { Alert, Image, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { deleteMyAccount } from "@/features/profile/api";
 import { useAuth } from "@/hooks/useAuth";
+import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "@/lib/legal";
 import { colors, radii, spacing, typography } from "@/lib/theme";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -88,6 +89,16 @@ export default function ProfileScreen() {
 
       <View style={styles.spacer} />
 
+      <View style={styles.legalRow}>
+        <Pressable onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
+          <Text style={styles.legalLink}>Privacy Policy</Text>
+        </Pressable>
+        <Text style={styles.legalDivider}>·</Text>
+        <Pressable onPress={() => Linking.openURL(TERMS_OF_SERVICE_URL)}>
+          <Text style={styles.legalLink}>Terms of Service</Text>
+        </Pressable>
+      </View>
+
       <Button label="Sign out" variant="secondary" onPress={signOut} />
       <Button
         label="Delete account"
@@ -153,4 +164,12 @@ const styles = StyleSheet.create({
   ratingLabel: { ...typography.caption, textAlign: "center" },
   menu: { marginTop: spacing.xl, gap: spacing.sm },
   spacer: { flex: 1 },
+  legalRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  legalLink: { ...typography.caption, color: colors.textMuted, textDecorationLine: "underline" },
+  legalDivider: { ...typography.caption, color: colors.textFaint },
 });
