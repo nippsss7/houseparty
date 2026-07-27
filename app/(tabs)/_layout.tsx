@@ -1,42 +1,24 @@
 import { Tabs } from "expo-router";
-import { Text } from "react-native";
+import type { ComponentProps } from "react";
 
-import { colors } from "@/lib/theme";
+import { GlassTabBar } from "@/components/GlassTabBar";
 
-function TabIcon({ emoji }: { emoji: string }) {
-  return <Text style={{ fontSize: 20 }}>{emoji}</Text>;
-}
+// expo-router doesn't re-export react-navigation's BottomTabBarProps type
+// (it bundles its own internal copy), so the incoming prop shape is cast at
+// this single boundary rather than typed loosely throughout GlassTabBar.
+type TabsProps = ComponentProps<typeof Tabs>;
+const renderTabBar: TabsProps["tabBar"] = (props) => (
+  <GlassTabBar {...(props as unknown as ComponentProps<typeof GlassTabBar>)} />
+);
 
 export default function TabsLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textFaint,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
-      }}
-    >
-      <Tabs.Screen
-        name="map/index"
-        options={{ title: "Map", tabBarIcon: () => <TabIcon emoji="🗺️" /> }}
-      />
-      <Tabs.Screen
-        name="explore/index"
-        options={{ title: "Explore", tabBarIcon: () => <TabIcon emoji="🔍" /> }}
-      />
-      <Tabs.Screen
-        name="create"
-        options={{ title: "Create", tabBarIcon: () => <TabIcon emoji="➕" /> }}
-      />
-      <Tabs.Screen
-        name="bookings/index"
-        options={{ title: "My Events", tabBarIcon: () => <TabIcon emoji="📩" /> }}
-      />
-      <Tabs.Screen
-        name="profile/index"
-        options={{ title: "Profile", tabBarIcon: () => <TabIcon emoji="👤" /> }}
-      />
+    <Tabs tabBar={renderTabBar} screenOptions={{ headerShown: false }}>
+      <Tabs.Screen name="map/index" options={{ title: "Map" }} />
+      <Tabs.Screen name="explore/index" options={{ title: "Explore" }} />
+      <Tabs.Screen name="create" options={{ title: "Create" }} />
+      <Tabs.Screen name="bookings/index" options={{ title: "My Events" }} />
+      <Tabs.Screen name="profile/index" options={{ title: "Profile" }} />
     </Tabs>
   );
 }

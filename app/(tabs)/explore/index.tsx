@@ -14,11 +14,13 @@ import {
   View,
 } from "react-native";
 
+import Animated, { FadeInDown } from "react-native-reanimated";
+
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
 import { eventPhotoUrl, fetchNearbyEvents, type NearbyEvent } from "@/features/events/api";
 import { eventCategoryOptions } from "@/features/events/schemas";
-import { colors, radii, spacing, typography } from "@/lib/theme";
+import { colors, radii, shadows, spacing, TAB_BAR_CLEARANCE, typography } from "@/lib/theme";
 import type { EventCategory } from "@/types/domain";
 
 const DEFAULT_CENTER: [number, number] = [151.2093, -33.8688];
@@ -140,8 +142,12 @@ export default function ExploreScreen() {
           data={events}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
-          renderItem={({ item }: { item: NearbyEvent }) => (
-            <ExploreCard event={item} onOpen={() => router.push(`/event/${item.id}`)} />
+          renderItem={({ item, index }: { item: NearbyEvent; index: number }) => (
+            <ExploreCard
+              event={item}
+              index={index}
+              onOpen={() => router.push(`/event/${item.id}`)}
+            />
           )}
         />
       )}
@@ -157,7 +163,15 @@ function FilterChip({ label, active, onPress }: { label: string; active: boolean
   );
 }
 
-function ExploreCard({ event, onOpen }: { event: NearbyEvent; onOpen: () => void }) {
+function ExploreCard({
+  event,
+  index,
+  onOpen,
+}: {
+  event: NearbyEvent;
+  index: number;
+  onOpen: () => void;
+}) {
   const categoryLabel =
     eventCategoryOptions.find((option) => option.value === event.category)?.label ?? event.category;
   const startAt = new Date(event.start_at);
@@ -165,7 +179,8 @@ function ExploreCard({ event, onOpen }: { event: NearbyEvent; onOpen: () => void
   const spotsLeft = event.capacity - event.current_rsvp_count;
 
   return (
-    <Pressable style={({ pressed }) => [styles.card, pressed && styles.cardPressed]} onPress={onOpen}>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 40).springify().damping(16)}>
+      <Pressable style={({ pressed }) => [styles.card, pressed && styles.cardPressed]} onPress={onOpen}>
       {event.cover_photo_path ? (
         <Image source={{ uri: eventPhotoUrl(event.cover_photo_path) }} style={styles.cardImage} />
       ) : (
@@ -190,7 +205,8 @@ function ExploreCard({ event, onOpen }: { event: NearbyEvent; onOpen: () => void
           {spotsLeft > 0 ? `${spotsLeft} spots left` : "Sold out"}
         </Text>
       </View>
-    </Pressable>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -224,16 +240,19 @@ const styles = StyleSheet.create({
   chipActive: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
   chipText: { color: colors.textMuted, fontWeight: "600", fontSize: 13 },
   chipTextActive: { color: colors.text },
-  listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
+  listContent: { paddingHorizontal: spacing.lg, paddingBottom: TAB_BAR_CLEARANCE, gap: spacing.md },
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceElevated,
     borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: "hidden",
+    ...shadows.card,
   },
   cardPressed: { opacity: 0.85 },
-  cardImage: { width: "100%", height: 150 },
+  cardImage: {
+    width: "100%",
+    height: 150,
+    borderTopLeftRadius: radii.md,
+    borderTopRightRadius: radii.md,
+  },
   cardImageFallback: {
     backgroundColor: colors.surfaceElevated,
     alignItems: "center",

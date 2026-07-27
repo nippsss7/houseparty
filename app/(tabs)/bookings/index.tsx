@@ -15,7 +15,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { BOOKING_STATUS_LABELS } from "@/features/bookings/status";
 import { useBookingRealtime } from "@/hooks/useBookingRealtime";
-import { colors, radii, spacing, typography } from "@/lib/theme";
+import { colors, radii, spacing, TAB_BAR_CLEARANCE, typography } from "@/lib/theme";
 import type { BookingStatus } from "@/types/domain";
 
 type Mode = "guest" | "host";
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   segmentActive: { backgroundColor: colors.primaryMuted },
   segmentText: { ...typography.label, color: colors.textMuted },
   segmentTextActive: { color: colors.text },
-  listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
+  listContent: { paddingHorizontal: spacing.lg, paddingBottom: TAB_BAR_CLEARANCE, gap: spacing.md },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radii.md,

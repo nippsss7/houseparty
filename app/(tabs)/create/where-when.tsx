@@ -192,7 +192,7 @@ export default function CreateEventWhereWhenScreen() {
       <View style={styles.mapWrap}>
         <Mapbox.MapView
           style={styles.map}
-          styleURL={Mapbox.StyleURL.Dark}
+          styleURL={Mapbox.StyleURL.Light}
           logoEnabled={false}
           attributionPosition={{ bottom: 4, right: 4 }}
           onPress={(feature) => {
@@ -233,7 +233,7 @@ export default function CreateEventWhereWhenScreen() {
           value={startAt}
           mode="datetime"
           minimumDate={new Date()}
-          themeVariant="dark"
+          themeVariant="light"
           accentColor={colors.primary}
           onChange={(_e, date) => {
             if (!date) return;
@@ -250,7 +250,7 @@ export default function CreateEventWhereWhenScreen() {
           value={endAt}
           mode="datetime"
           minimumDate={startAt}
-          themeVariant="dark"
+          themeVariant="light"
           accentColor={colors.primary}
           onChange={(_e, date) => date && setEndAt(date)}
         />

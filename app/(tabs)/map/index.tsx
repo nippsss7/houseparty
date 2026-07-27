@@ -5,12 +5,13 @@ import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 
 import { eventPhotoUrl, fetchNearbyEvents, type NearbyEvent } from "@/features/events/api";
 import { eventCategoryOptions } from "@/features/events/schemas";
 import { updateMyLocation } from "@/features/notifications/api";
 import { Mapbox } from "@/services/mapbox";
-import { colors, radii, spacing, typography } from "@/lib/theme";
+import { colors, radii, shadows, spacing, TAB_BAR_CLEARANCE, typography } from "@/lib/theme";
 
 const DEFAULT_CENTER: [number, number] = [151.2093, -33.8688];
 
@@ -152,7 +153,7 @@ export default function MapScreen() {
       <Mapbox.MapView
         ref={mapRef}
         style={styles.map}
-        styleURL={Mapbox.StyleURL.Dark}
+        styleURL={Mapbox.StyleURL.Light}
         logoEnabled={false}
         attributionPosition={{ bottom: 8, left: 8 }}
         scaleBarEnabled={false}
@@ -246,14 +247,18 @@ export default function MapScreen() {
               </Text>
             }
             ItemSeparatorComponent={() => <View style={styles.listSeparator} />}
-            renderItem={({ item }: { item: NearbyEvent }) => (
-              <EventPreview event={item} onOpen={() => router.push(`/event/${item.id}`)} />
+            renderItem={({ item, index }: { item: NearbyEvent; index: number }) => (
+              <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 40).springify().damping(16)}>
+                <EventPreview event={item} onOpen={() => router.push(`/event/${item.id}`)} />
+              </Animated.View>
             )}
           />
         ) : (
           <BottomSheetView style={styles.sheetContent}>
             {selected && (
-              <EventPreview event={selected} onOpen={() => router.push(`/event/${selected.id}`)} />
+              <Animated.View entering={FadeIn.duration(220)}>
+                <EventPreview event={selected} onOpen={() => router.push(`/event/${selected.id}`)} />
+              </Animated.View>
             )}
           </BottomSheetView>
         )}
@@ -309,12 +314,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radii.full,
     backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
+    ...shadows.card,
   },
   badgePressed: { opacity: 0.7 },
   badgeText: { ...typography.caption, color: colors.text, fontWeight: "600" },
-  listContent: { paddingHorizontal: spacing.md, paddingBottom: spacing.xl },
+  listContent: { paddingHorizontal: spacing.md, paddingBottom: TAB_BAR_CLEARANCE },
   listTitle: { ...typography.heading, marginBottom: spacing.md, marginTop: spacing.xs },
   listSeparator: {
     height: StyleSheet.hairlineWidth,

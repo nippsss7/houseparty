@@ -6,7 +6,7 @@ import { Screen } from "@/components/Screen";
 import { deleteMyAccount } from "@/features/profile/api";
 import { useAuth } from "@/hooks/useAuth";
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "@/lib/legal";
-import { colors, radii, spacing, typography } from "@/lib/theme";
+import { colors, radii, spacing, TAB_BAR_CLEARANCE, typography } from "@/lib/theme";
 
 const STATUS_LABEL: Record<string, string> = {
   unverified: "Not verified",
@@ -133,6 +133,7 @@ export default function ProfileScreen() {
           )
         }
       />
+      <View style={{ height: TAB_BAR_CLEARANCE }} />
     </Screen>
   );
 }
