@@ -37,6 +37,14 @@ const ICONS: Record<string, { outline: keyof typeof Ionicons.glyphMap; filled: k
 
 export function GlassTabBar({ state, descriptors, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
+  const createRoute = state.routes.find((r) => r.name === "create");
+  const createIndex = state.routes.findIndex((r) => r.name === "create");
+
+  const onTabPress = (route: TabBarProps["state"]["routes"][number], isFocused: boolean) => {
+    const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
+    Haptics.selectionAsync();
+    if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name, route.params);
+  };
 
   return (
     <View style={[styles.wrap, { bottom: insets.bottom + spacing.sm }]} pointerEvents="box-none">
@@ -48,15 +56,11 @@ export function GlassTabBar({ state, descriptors, navigation }: TabBarProps) {
             const { options } = descriptors[route.key];
             const label = options.title ?? route.name;
 
-            const onPress = () => {
-              const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
-              Haptics.selectionAsync();
-              if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name, route.params);
-            };
-
-            if (route.name === "create") {
-              return <CreateTabButton key={route.key} focused={isFocused} onPress={onPress} />;
-            }
+            // The create button renders separately below, outside this
+            // clipped (overflow: hidden) blur container, so it can pop
+            // above the bar without being cut off. This spacer just
+            // reserves its share of the row's flex layout.
+            if (route.name === "create") return <View key={route.key} style={styles.item} />;
 
             const icons = ICONS[route.name];
             return (
@@ -65,12 +69,21 @@ export function GlassTabBar({ state, descriptors, navigation }: TabBarProps) {
                 label={label}
                 focused={isFocused}
                 icon={isFocused ? icons?.filled : icons?.outline}
-                onPress={onPress}
+                onPress={() => onTabPress(route, isFocused)}
               />
             );
           })}
         </View>
       </BlurView>
+
+      {createRoute && (
+        <View style={styles.createButtonSlot} pointerEvents="box-none">
+          <CreateTabButton
+            focused={state.index === createIndex}
+            onPress={() => onTabPress(createRoute, state.index === createIndex)}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -123,20 +136,12 @@ function CreateTabButton({ focused, onPress }: { focused: boolean; onPress: () =
       onPressOut={() => {
         scale.value = withSpring(1, { damping: 8, stiffness: 260 });
       }}
-      style={styles.item}
+      hitSlop={8}
       accessibilityRole="button"
       accessibilityState={{ selected: focused }}
     >
-      <Animated.View style={[styles.createButtonWrap, animatedStyle]}>
-        {/* Layered circles simulate a glossy 3D orb without a gradient
-            library: a darker "base" peeking out as a thin rim at the
-            bottom, a lighter "face" on top, and a soft highlight ellipse
-            for the glass-like sheen. */}
-        <View style={styles.createButtonBase} />
-        <View style={styles.createButtonFace}>
-          <View style={styles.createButtonHighlight} />
-          <Ionicons name="add" size={27} color={colors.white} style={styles.createButtonIcon} />
-        </View>
+      <Animated.View style={[styles.createButton, animatedStyle]}>
+        <Ionicons name="add" size={26} color={colors.white} />
       </Animated.View>
     </Pressable>
   );
@@ -168,53 +173,27 @@ const styles = StyleSheet.create({
   item: { flex: 1, alignItems: "center", justifyContent: "center", gap: 2, paddingVertical: 2 },
   itemLabel: { fontSize: 11, fontWeight: "600", color: colors.textMuted },
   itemLabelActive: { color: colors.primary },
-  createButtonWrap: {
-    width: 58,
-    height: 60,
-    marginTop: -22,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.45,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-  },
-  createButtonBase: {
+  // Absolutely centered over the row, as a sibling of the (clipped) blur
+  // view rather than a child of it — lets the button pop above the bar
+  // without its top edge being sliced off by the bar's overflow: hidden.
+  createButtonSlot: {
     position: "absolute",
-    top: 3,
-    left: 1,
-    width: 56,
-    height: 56,
-    borderRadius: radii.full,
-    backgroundColor: "#C71C63",
+    top: -22,
+    left: 0,
+    right: 0,
+    alignItems: "center",
   },
-  createButtonFace: {
-    position: "absolute",
-    top: 0,
-    left: 1,
-    width: 56,
-    height: 56,
+  createButton: {
+    width: 52,
+    height: 52,
     borderRadius: radii.full,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
-  },
-  createButtonHighlight: {
-    position: "absolute",
-    top: 6,
-    left: 10,
-    width: 26,
-    height: 15,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.4)",
-    transform: [{ rotate: "-18deg" }],
-  },
-  createButtonIcon: {
-    shadowColor: "#7A0E3C",
-    shadowOpacity: 0.5,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
+    shadowColor: colors.primary,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 6,
   },
 });
