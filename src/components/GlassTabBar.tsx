@@ -141,7 +141,7 @@ function CreateTabButton({ focused, onPress }: { focused: boolean; onPress: () =
       accessibilityState={{ selected: focused }}
     >
       <Animated.View style={[styles.createButton, animatedStyle]}>
-        <Ionicons name="add" size={26} color={colors.white} />
+        <Ionicons name="add" size={30} color={colors.white} />
       </Animated.View>
     </Pressable>
   );
@@ -178,14 +178,14 @@ const styles = StyleSheet.create({
   // without its top edge being sliced off by the bar's overflow: hidden.
   createButtonSlot: {
     position: "absolute",
-    top: -22,
+    top: -26,
     left: 0,
     right: 0,
     alignItems: "center",
   },
   createButton: {
-    width: 52,
-    height: 52,
+    width: 60,
+    height: 60,
     borderRadius: radii.full,
     backgroundColor: colors.primary,
     alignItems: "center",
