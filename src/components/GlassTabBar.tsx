@@ -127,8 +127,16 @@ function CreateTabButton({ focused, onPress }: { focused: boolean; onPress: () =
       accessibilityRole="button"
       accessibilityState={{ selected: focused }}
     >
-      <Animated.View style={[styles.createButton, animatedStyle]}>
-        <Ionicons name="add" size={28} color={colors.white} />
+      <Animated.View style={[styles.createButtonWrap, animatedStyle]}>
+        {/* Layered circles simulate a glossy 3D orb without a gradient
+            library: a darker "base" peeking out as a thin rim at the
+            bottom, a lighter "face" on top, and a soft highlight ellipse
+            for the glass-like sheen. */}
+        <View style={styles.createButtonBase} />
+        <View style={styles.createButtonFace}>
+          <View style={styles.createButtonHighlight} />
+          <Ionicons name="add" size={27} color={colors.white} style={styles.createButtonIcon} />
+        </View>
       </Animated.View>
     </Pressable>
   );
@@ -160,18 +168,53 @@ const styles = StyleSheet.create({
   item: { flex: 1, alignItems: "center", justifyContent: "center", gap: 2, paddingVertical: 2 },
   itemLabel: { fontSize: 11, fontWeight: "600", color: colors.textMuted },
   itemLabelActive: { color: colors.primary },
-  createButton: {
-    width: 52,
-    height: 52,
+  createButtonWrap: {
+    width: 58,
+    height: 60,
+    marginTop: -22,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  createButtonBase: {
+    position: "absolute",
+    top: 3,
+    left: 1,
+    width: 56,
+    height: 56,
+    borderRadius: radii.full,
+    backgroundColor: "#C71C63",
+  },
+  createButtonFace: {
+    position: "absolute",
+    top: 0,
+    left: 1,
+    width: 56,
+    height: 56,
     borderRadius: radii.full,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: -20,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+  },
+  createButtonHighlight: {
+    position: "absolute",
+    top: 6,
+    left: 10,
+    width: 26,
+    height: 15,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.4)",
+    transform: [{ rotate: "-18deg" }],
+  },
+  createButtonIcon: {
+    shadowColor: "#7A0E3C",
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
   },
 });
