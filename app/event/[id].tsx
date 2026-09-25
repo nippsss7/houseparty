@@ -24,6 +24,7 @@ import {
 import { eventPhotoUrl, fetchEvent } from "@/features/events/api";
 import { cancellationPolicyOptions, eventCategoryOptions } from "@/features/events/schemas";
 import { showSafetyMenu } from "@/features/safety/actions";
+import { fetchTicketTiers, purchaseTicket, type TicketTierRow } from "@/features/tickets/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useBookingRealtime } from "@/hooks/useBookingRealtime";
 import { colors, radii, spacing, typography } from "@/lib/theme";
@@ -58,6 +59,12 @@ export default function EventDetailScreen() {
     enabled: isHost,
   });
   const pendingCount = hostRequests.filter((r) => r.status === "pending").length;
+
+  const { data: ticketTiers = [] } = useQuery({
+    queryKey: ["ticket-tiers", id],
+    queryFn: () => fetchTicketTiers(id),
+    enabled: !!id,
+  });
 
   if (isPending) {
     return (
@@ -141,6 +148,22 @@ export default function EventDetailScreen() {
           <Text style={styles.category}>{categoryLabel.toUpperCase()}</Text>
           <Text style={typography.title}>{event.title}</Text>
 
+          {event.organization && (
+            <Pressable
+              style={styles.orgRow}
+              onPress={() => router.push(`/org/${event.organization!.id}`)}
+            >
+              {event.organization.avatar_url ? (
+                <Image source={{ uri: event.organization.avatar_url }} style={styles.orgAvatar} />
+              ) : (
+                <View style={[styles.orgAvatar, styles.orgAvatarFallback]}>
+                  <Text style={styles.orgAvatarEmoji}>🏢</Text>
+                </View>
+              )}
+              <Text style={styles.orgName}>Posted by {event.organization.name}</Text>
+            </Pressable>
+          )}
+
           <View style={styles.hostRow}>
             {event.host?.avatar_url ? (
               <Image source={{ uri: event.host.avatar_url }} style={styles.hostAvatar} />
@@ -205,20 +228,33 @@ export default function EventDetailScreen() {
 
           <View style={styles.ctaSpacer} />
           {isOwnEvent ? (
-            <Pressable
-              style={({ pressed }) => [styles.hostCta, pressed && styles.hostCtaPressed]}
-              onPress={() => router.push(`/host/${event.id}`)}
-            >
-              <Text style={styles.hostCtaText}>Guest requests</Text>
-              <View style={styles.hostCtaRight}>
-                {pendingCount > 0 && (
-                  <View style={styles.pendingBadge}>
-                    <Text style={styles.pendingBadgeText}>{pendingCount}</Text>
-                  </View>
-                )}
-                <Text style={styles.hostCtaChevron}>›</Text>
-              </View>
-            </Pressable>
+            <View style={styles.hostCtaStack}>
+              {ticketTiers.length > 0 && (
+                <Pressable
+                  style={({ pressed }) => [styles.hostCta, pressed && styles.hostCtaPressed]}
+                  onPress={() => router.push(`/host/scan/${event.id}`)}
+                >
+                  <Text style={styles.hostCtaText}>Scan tickets</Text>
+                  <Text style={styles.hostCtaChevron}>›</Text>
+                </Pressable>
+              )}
+              <Pressable
+                style={({ pressed }) => [styles.hostCta, pressed && styles.hostCtaPressed]}
+                onPress={() => router.push(`/host/${event.id}`)}
+              >
+                <Text style={styles.hostCtaText}>Guest requests</Text>
+                <View style={styles.hostCtaRight}>
+                  {pendingCount > 0 && (
+                    <View style={styles.pendingBadge}>
+                      <Text style={styles.pendingBadgeText}>{pendingCount}</Text>
+                    </View>
+                  )}
+                  <Text style={styles.hostCtaChevron}>›</Text>
+                </View>
+              </Pressable>
+            </View>
+          ) : ticketTiers.length > 0 ? (
+            <TicketPurchaseSection tiers={ticketTiers} isVerified={isVerified} />
           ) : (
             <RequestSection
               eventId={event.id}
@@ -360,6 +396,74 @@ function RequestSection({
   );
 }
 
+function TicketPurchaseSection({
+  tiers,
+  isVerified,
+}: {
+  tiers: TicketTierRow[];
+  isVerified: boolean;
+}) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [selectedTierId, setSelectedTierId] = useState(tiers[0]?.id ?? null);
+  const [error, setError] = useState<string | null>(null);
+
+  const buy = useMutation({
+    mutationFn: () => purchaseTicket(selectedTierId!),
+    onSuccess: (ticket) => {
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ["my-tickets"] });
+      queryClient.invalidateQueries({ queryKey: ["ticket-tiers"] });
+      queryClient.invalidateQueries({ queryKey: ["event"] });
+      router.push(`/ticket/${ticket.id}`);
+    },
+    onError: (err) => setError(err instanceof Error ? err.message : "Couldn't get that ticket"),
+  });
+
+  return (
+    <View style={styles.requestCard}>
+      <Text style={typography.heading}>Tickets</Text>
+      <View style={styles.tierPicker}>
+        {tiers.map((tier) => {
+          const soldOut = tier.quantity_sold >= tier.quantity_total;
+          const selected = selectedTierId === tier.id;
+          return (
+            <Pressable
+              key={tier.id}
+              style={[styles.tierOption, selected && styles.tierOptionSelected, soldOut && styles.tierOptionDisabled]}
+              onPress={() => !soldOut && setSelectedTierId(tier.id)}
+              disabled={soldOut}
+            >
+              <View>
+                <Text style={typography.body}>{tier.name}</Text>
+                <Text style={styles.tierOptionMeta}>
+                  {soldOut ? "Sold out" : `${tier.quantity_total - tier.quantity_sold} left`}
+                </Text>
+              </View>
+              <Text style={styles.tierOptionPrice}>
+                {Number(tier.price) > 0 ? `$${Number(tier.price).toFixed(2)}` : "Free"}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {!!error && <Text style={styles.requestError}>{error}</Text>}
+      <Button
+        label="Get ticket"
+        onPress={() => {
+          if (!isVerified) {
+            Alert.alert("Verification required", "Verify your ID to buy tickets to events.");
+            return;
+          }
+          buy.mutate();
+        }}
+        loading={buy.isPending}
+        disabled={!selectedTierId}
+      />
+    </View>
+  );
+}
+
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <View style={styles.infoRow}>
@@ -388,6 +492,11 @@ const styles = StyleSheet.create({
   galleryEmoji: { fontSize: 56 },
   body: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, gap: spacing.sm },
   category: { ...typography.caption, color: colors.primary, fontWeight: "700" },
+  orgRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.xs },
+  orgAvatar: { width: 24, height: 24, borderRadius: 12 },
+  orgAvatarFallback: { backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
+  orgAvatarEmoji: { fontSize: 12 },
+  orgName: { ...typography.label, color: colors.primary },
   hostRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -413,6 +522,7 @@ const styles = StyleSheet.create({
   ctaSpacer: { height: spacing.lg },
   headerMenuButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   headerMenuDots: { fontSize: 20, color: colors.text, fontWeight: "700" },
+  hostCtaStack: { gap: spacing.sm },
   hostCta: {
     flexDirection: "row",
     alignItems: "center",
@@ -476,4 +586,20 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlignVertical: "top",
   },
+  tierPicker: { gap: spacing.sm },
+  tierOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  tierOptionSelected: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
+  tierOptionDisabled: { opacity: 0.4 },
+  tierOptionMeta: { ...typography.caption, color: colors.textMuted },
+  tierOptionPrice: { ...typography.heading, fontSize: 17 },
 });

@@ -6,6 +6,7 @@ export default function CreateEventLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="details" />
       <Stack.Screen name="where-when" />
+      <Stack.Screen name="tickets" />
       <Stack.Screen name="photos" />
     </Stack>
   );

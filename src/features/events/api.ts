@@ -29,6 +29,7 @@ export async function createEvent(params: {
   startAt: Date;
   endAt: Date;
   photoUris: string[];
+  organizationId?: string;
 }) {
   const { data: event, error } = await supabase
     .from("events")
@@ -49,6 +50,7 @@ export async function createEvent(params: {
       city: params.city,
       start_at: params.startAt.toISOString(),
       end_at: params.endAt.toISOString(),
+      organization_id: params.organizationId ?? null,
     })
     .select()
     .single();
@@ -101,7 +103,7 @@ export async function fetchEvent(eventId: string) {
   const { data, error } = await supabase
     .from("events")
     .select(
-      "*, photos:event_photos(id, storage_path, position), host:profiles!events_host_id_fkey(id, full_name, username, avatar_url, host_rating_avg, host_rating_count)"
+      "*, photos:event_photos(id, storage_path, position), host:profiles!events_host_id_fkey(id, full_name, username, avatar_url, host_rating_avg, host_rating_count), organization:organizations(id, name, handle, avatar_url)"
     )
     .eq("id", eventId)
     .single();

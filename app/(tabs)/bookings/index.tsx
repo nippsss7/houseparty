@@ -12,13 +12,20 @@ import {
   type HostedEvent,
   type MyRequest,
 } from "@/features/bookings/api";
+import { fetchMyTickets, type MyTicket } from "@/features/tickets/api";
 import { useAuth } from "@/hooks/useAuth";
 import { BOOKING_STATUS_LABELS } from "@/features/bookings/status";
 import { useBookingRealtime } from "@/hooks/useBookingRealtime";
 import { colors, radii, spacing, TAB_BAR_CLEARANCE, typography } from "@/lib/theme";
 import type { BookingStatus } from "@/types/domain";
 
-type Mode = "guest" | "host";
+type Mode = "guest" | "host" | "tickets";
+
+const TICKET_STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  confirmed: { label: "Confirmed", color: colors.success },
+  checked_in: { label: "Checked in", color: colors.textMuted },
+  cancelled: { label: "Cancelled", color: colors.danger },
+};
 
 export default function BookingsScreen() {
   const { session } = useAuth();
@@ -31,10 +38,13 @@ export default function BookingsScreen() {
         <Text style={typography.title}>My Events</Text>
         <View style={styles.segments}>
           <Segment label="My requests" active={mode === "guest"} onPress={() => setMode("guest")} />
+          <Segment label="Tickets" active={mode === "tickets"} onPress={() => setMode("tickets")} />
           <Segment label="Hosting" active={mode === "host"} onPress={() => setMode("host")} />
         </View>
       </View>
-      {mode === "guest" ? <GuestList userId={session?.user.id} /> : <HostList userId={session?.user.id} />}
+      {mode === "guest" && <GuestList userId={session?.user.id} />}
+      {mode === "tickets" && <TicketsList userId={session?.user.id} />}
+      {mode === "host" && <HostList userId={session?.user.id} />}
     </Screen>
   );
 }
@@ -116,6 +126,56 @@ function GuestList({ userId }: { userId?: string }) {
                 onPress={() => router.push(`/review/${item.id}`)}
               />
             )}
+          </Pressable>
+        );
+      }}
+    />
+  );
+}
+
+function TicketsList({ userId }: { userId?: string }) {
+  const router = useRouter();
+
+  const { data: tickets = [], isPending } = useQuery({
+    queryKey: ["my-tickets", userId],
+    queryFn: () => fetchMyTickets(userId!),
+    enabled: !!userId,
+  });
+
+  if (!isPending && tickets.length === 0) {
+    return (
+      <EmptyState
+        emoji="🎫"
+        title="No tickets yet"
+        body="Buy a ticket from an event page and it'll show up here with its QR code."
+      />
+    );
+  }
+
+  return (
+    <FlatList
+      data={tickets}
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={styles.listContent}
+      renderItem={({ item }: { item: MyTicket }) => {
+        const status = TICKET_STATUS_LABELS[item.status] ?? TICKET_STATUS_LABELS.confirmed;
+        const startAt = item.event ? new Date(item.event.start_at) : null;
+        return (
+          <Pressable style={styles.card} onPress={() => router.push(`/ticket/${item.id}`)}>
+            <View style={styles.cardHeader}>
+              <Text style={typography.heading} numberOfLines={1}>
+                {item.event?.title ?? "Event"}
+              </Text>
+              <Text style={[styles.statusChip, { color: status.color }]}>{status.label}</Text>
+            </View>
+            <Text style={styles.cardMeta}>
+              {item.tier?.name}
+              {startAt
+                ? ` · ${startAt.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}`
+                : ""}
+              {` · ${item.event?.city ?? ""}`}
+            </Text>
+            <Text style={styles.viewTicketLink}>View ticket →</Text>
           </Pressable>
         );
       }}
@@ -222,6 +282,7 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: spacing.sm },
   cardMeta: { ...typography.caption, color: colors.textMuted },
   statusChip: { ...typography.label },
+  viewTicketLink: { ...typography.label, color: colors.primary },
   pendingBadge: {
     minWidth: 24,
     height: 24,

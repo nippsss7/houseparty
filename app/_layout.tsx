@@ -65,6 +65,11 @@ function RootNavigator() {
       <Stack.Screen name="report" options={{ headerShown: true, title: "Report" }} />
       <Stack.Screen name="admin/verifications" options={{ headerShown: true, title: "Review verifications" }} />
       <Stack.Screen name="admin/reports" options={{ headerShown: true, title: "Open reports" }} />
+      <Stack.Screen name="ticket/[id]" options={{ headerShown: true, title: "Ticket" }} />
+      <Stack.Screen name="host/scan/[eventId]" options={{ headerShown: true, title: "Scan tickets" }} />
+      <Stack.Screen name="org/create" options={{ headerShown: true, title: "Create organization" }} />
+      <Stack.Screen name="org/[id]" options={{ headerShown: true, title: "" }} />
+      <Stack.Screen name="org/[id]/post" options={{ headerShown: true, title: "New post" }} />
     </Stack>
   );
 }

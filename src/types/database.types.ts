@@ -180,6 +180,7 @@ export type Database = {
           lat: number | null
           lng: number | null
           location: unknown
+          organization_id: string | null
           price_per_person: number
           search_vector: unknown
           start_at: string
@@ -206,6 +207,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           location: unknown
+          organization_id?: string | null
           price_per_person?: number
           search_vector?: unknown
           start_at: string
@@ -232,6 +234,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           location?: unknown
+          organization_id?: string | null
           price_per_person?: number
           search_vector?: unknown
           start_at?: string
@@ -246,6 +249,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -333,6 +343,144 @@ export type Database = {
           {
             foreignKeyName: "notification_log_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_followers: {
+        Row: {
+          created_at: string
+          organization_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          organization_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          organization_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_followers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_followers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_post_photos: {
+        Row: {
+          id: string
+          position: number
+          post_id: string
+          storage_path: string
+        }
+        Insert: {
+          id?: string
+          position?: number
+          post_id: string
+          storage_path: string
+        }
+        Update: {
+          id?: string
+          position?: number
+          post_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_post_photos_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "organization_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_posts: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          organization_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          organization_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_posts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          cover_url: string | null
+          created_at: string
+          follower_count: number
+          handle: string
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          cover_url?: string | null
+          created_at?: string
+          follower_count?: number
+          handle: string
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          cover_url?: string | null
+          created_at?: string
+          follower_count?: number
+          handle?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizations_owner_id_fkey"
+            columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -557,6 +705,121 @@ export type Database = {
           srtext?: string | null
         }
         Relationships: []
+      }
+      ticket_tiers: {
+        Row: {
+          created_at: string
+          currency: string
+          event_id: string
+          id: string
+          name: string
+          position: number
+          price: number
+          quantity_sold: number
+          quantity_total: number
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          event_id: string
+          id?: string
+          name: string
+          position?: number
+          price?: number
+          quantity_sold?: number
+          quantity_total: number
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          event_id?: string
+          id?: string
+          name?: string
+          position?: number
+          price?: number
+          quantity_sold?: number
+          quantity_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_tiers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tickets: {
+        Row: {
+          checked_in_at: string | null
+          checked_in_by: string | null
+          created_at: string
+          currency: string
+          event_id: string
+          id: string
+          price_paid: number
+          qr_token: string
+          status: string
+          tier_id: string
+          user_id: string
+        }
+        Insert: {
+          checked_in_at?: string | null
+          checked_in_by?: string | null
+          created_at?: string
+          currency?: string
+          event_id: string
+          id?: string
+          price_paid?: number
+          qr_token?: string
+          status?: string
+          tier_id: string
+          user_id: string
+        }
+        Update: {
+          checked_in_at?: string | null
+          checked_in_by?: string | null
+          created_at?: string
+          currency?: string
+          event_id?: string
+          id?: string
+          price_paid?: number
+          qr_token?: string
+          status?: string
+          tier_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_checked_in_by_fkey"
+            columns: ["checked_in_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_blocks: {
         Row: {
@@ -785,6 +1048,40 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cancel_ticket: {
+        Args: { p_ticket_id: string }
+        Returns: {
+          checked_in_at: string | null
+          checked_in_by: string | null
+          created_at: string
+          currency: string
+          event_id: string
+          id: string
+          price_paid: number
+          qr_token: string
+          status: string
+          tier_id: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tickets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      check_in_ticket: {
+        Args: { p_qr_token: string }
+        Returns: {
+          already_checked_in_at: string
+          event_title: string
+          guest_avatar_url: string
+          guest_name: string
+          status: string
+          ticket_id: string
+          tier_name: string
+        }[]
+      }
       delete_my_account: { Args: never; Returns: undefined }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
@@ -819,6 +1116,57 @@ export type Database = {
         | { Args: { table_name: string }; Returns: string }
       enablelongtransactions: { Args: never; Returns: string }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      find_nearby_users_for_event: {
+        Args: { p_event_id: string }
+        Returns: {
+          expo_push_token: string
+          user_id: string
+        }[]
+      }
+      find_org_follower_email_targets: {
+        Args: { p_event_id: string }
+        Returns: {
+          email: string
+          full_name: string
+          user_id: string
+        }[]
+      }
+      find_org_follower_push_targets: {
+        Args: { p_event_id: string }
+        Returns: {
+          expo_push_token: string
+          user_id: string
+        }[]
+      }
+      find_stale_pending_requests: {
+        Args: { p_older_than: string }
+        Returns: {
+          booking_id: string
+          event_id: string
+          event_title: string
+          expo_push_token: string
+          host_id: string
+        }[]
+      }
+      find_upcoming_event_starts: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          booking_id: string
+          event_id: string
+          event_title: string
+          expo_push_token: string
+          user_id: string
+        }[]
+      }
+      find_weekly_digest_recipients: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          new_event_count: number
+          user_id: string
+        }[]
+      }
       geometry: { Args: { "": string }; Returns: unknown }
       geometry_above: {
         Args: { geom1: unknown; geom2: unknown }
@@ -989,6 +1337,28 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      purchase_ticket: {
+        Args: { p_tier_id: string }
+        Returns: {
+          checked_in_at: string | null
+          checked_in_by: string | null
+          created_at: string
+          currency: string
+          event_id: string
+          id: string
+          price_paid: number
+          qr_token: string
+          status: string
+          tier_id: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tickets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       request_to_join: {
         Args: { p_event_id: string; p_message?: string; p_party_size: number }
         Returns: {
@@ -1727,12 +2097,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1756,11 +2126,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1781,11 +2151,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1806,11 +2176,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1823,11 +2193,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

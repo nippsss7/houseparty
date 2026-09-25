@@ -8,6 +8,7 @@ import { Screen } from "@/components/Screen";
 import { StepHeader } from "@/components/StepHeader";
 import { createEvent } from "@/features/events/api";
 import { eventCategoryOptions } from "@/features/events/schemas";
+import { createTicketTier } from "@/features/tickets/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useImagePicker } from "@/hooks/useImagePicker";
 import { useCreateEventStore } from "@/stores/createEventStore";
@@ -20,7 +21,7 @@ export default function CreateEventPhotosScreen() {
   const queryClient = useQueryClient();
   const { session } = useAuth();
   const { pickMultipleFromLibrary } = useImagePicker();
-  const { basics, details, locationSchedule, photoUris, setPhotoUris, reset } =
+  const { basics, details, locationSchedule, organizationId, ticketTiers, photoUris, setPhotoUris, reset } =
     useCreateEventStore();
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +30,7 @@ export default function CreateEventPhotosScreen() {
       if (!session || !basics || !details || !locationSchedule) {
         throw new Error("Missing event details — go back and complete every step.");
       }
-      return createEvent({
+      const event = await createEvent({
         hostId: session.user.id,
         title: basics.title,
         description: basics.description,
@@ -49,7 +50,23 @@ export default function CreateEventPhotosScreen() {
         startAt: locationSchedule.startAt,
         endAt: locationSchedule.endAt,
         photoUris,
+        organizationId: organizationId ?? undefined,
       });
+
+      if (ticketTiers.length > 0) {
+        await Promise.all(
+          ticketTiers.map((tier, index) =>
+            createTicketTier({
+              eventId: event.id,
+              name: tier.name,
+              price: tier.price,
+              quantityTotal: tier.quantityTotal,
+              position: index,
+            })
+          )
+        );
+      }
+      return event;
     },
     onSuccess: (event) => {
       queryClient.invalidateQueries({ queryKey: ["nearby-events"] });
@@ -74,7 +91,7 @@ export default function CreateEventPhotosScreen() {
 
   return (
     <Screen scroll>
-      <StepHeader step={4} total={4} title="Photos & review" />
+      <StepHeader step={5} total={5} title="Photos & review" />
 
       <Text style={typography.label}>Photos ({photoUris.length}/{MAX_PHOTOS})</Text>
       <View style={styles.photoGrid}>
@@ -106,6 +123,14 @@ export default function CreateEventPhotosScreen() {
           <SummaryRow
             label="When"
             value={`${locationSchedule.startAt.toLocaleString()} → ${locationSchedule.endAt.toLocaleString()}`}
+          />
+          <SummaryRow
+            label="Tickets"
+            value={
+              ticketTiers.length > 0
+                ? ticketTiers.map((t) => `${t.name} $${t.price.toFixed(2)} × ${t.quantityTotal}`).join(", ")
+                : "Free — request to join"
+            }
           />
         </View>
       ) : (

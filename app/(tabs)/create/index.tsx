@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/Button";
 import { ChipGroup } from "@/components/ChipGroup";
@@ -9,15 +10,24 @@ import { Screen } from "@/components/Screen";
 import { StepHeader } from "@/components/StepHeader";
 import { TextField } from "@/components/TextField";
 import { eventBasicsSchema, eventCategoryOptions, type EventBasics } from "@/features/events/schemas";
+import { fetchMyOrganizations } from "@/features/organizations/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreateEventStore } from "@/stores/createEventStore";
-import { colors, spacing, typography } from "@/lib/theme";
+import { colors, radii, spacing, typography } from "@/lib/theme";
 
 export default function CreateEventBasicsScreen() {
   const router = useRouter();
-  const { isVerified } = useAuth();
+  const { session, isVerified } = useAuth();
   const basics = useCreateEventStore((s) => s.basics);
   const setBasics = useCreateEventStore((s) => s.setBasics);
+  const organizationId = useCreateEventStore((s) => s.organizationId);
+  const setOrganizationId = useCreateEventStore((s) => s.setOrganizationId);
+
+  const { data: myOrgs = [] } = useQuery({
+    queryKey: ["my-organizations", session?.user.id],
+    queryFn: () => fetchMyOrganizations(session!.user.id),
+    enabled: !!session && isVerified,
+  });
 
   const {
     control,
@@ -49,7 +59,34 @@ export default function CreateEventBasicsScreen() {
 
   return (
     <Screen scroll>
-      <StepHeader step={1} total={4} title="Host an event" />
+      <StepHeader step={1} total={5} title="Host an event" />
+
+      {myOrgs.length > 0 && (
+        <View style={styles.orgPicker}>
+          <Text style={typography.label}>Post as</Text>
+          <View style={styles.orgChips}>
+            <Pressable
+              style={[styles.orgChip, organizationId === null && styles.orgChipActive]}
+              onPress={() => setOrganizationId(null)}
+            >
+              <Text style={[styles.orgChipText, organizationId === null && styles.orgChipTextActive]}>
+                Yourself
+              </Text>
+            </Pressable>
+            {myOrgs.map((org) => (
+              <Pressable
+                key={org.id}
+                style={[styles.orgChip, organizationId === org.id && styles.orgChipActive]}
+                onPress={() => setOrganizationId(org.id)}
+              >
+                <Text style={[styles.orgChipText, organizationId === org.id && styles.orgChipTextActive]}>
+                  {org.name}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
 
       <Controller
         control={control}
@@ -108,6 +145,19 @@ export default function CreateEventBasicsScreen() {
 
 const styles = StyleSheet.create({
   multiline: { height: 120, paddingTop: spacing.md, textAlignVertical: "top" },
+  orgPicker: { marginBottom: spacing.md, gap: spacing.xs },
+  orgChips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+  orgChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  orgChipActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
+  orgChipText: { ...typography.label, color: colors.textMuted },
+  orgChipTextActive: { color: colors.primary },
   chips: { marginTop: spacing.xs, gap: spacing.xs },
   error: { fontSize: 13, color: colors.danger },
   spacer: { flex: 1, minHeight: spacing.lg },

@@ -1,8 +1,10 @@
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Alert, Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/Button";
 import { Screen } from "@/components/Screen";
+import { fetchMyOrganizations } from "@/features/organizations/api";
 import { deleteMyAccount } from "@/features/profile/api";
 import { useAuth } from "@/hooks/useAuth";
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from "@/lib/legal";
@@ -24,8 +26,14 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { profile, isAdmin, signOut } = useAuth();
+  const { profile, session, isAdmin, signOut } = useAuth();
   const status = profile?.verification_status ?? "unverified";
+
+  const { data: myOrgs = [] } = useQuery({
+    queryKey: ["my-organizations", session?.user.id],
+    queryFn: () => fetchMyOrganizations(session!.user.id),
+    enabled: !!session && status === "verified",
+  });
 
   return (
     <Screen>
@@ -76,6 +84,23 @@ export default function ProfileScreen() {
           variant="secondary"
           onPress={() => router.push("/settings/notifications")}
         />
+        {status === "verified" &&
+          (myOrgs.length > 0 ? (
+            myOrgs.map((org) => (
+              <Button
+                key={org.id}
+                label={`My organization: ${org.name}`}
+                variant="secondary"
+                onPress={() => router.push(`/org/${org.id}`)}
+              />
+            ))
+          ) : (
+            <Button
+              label="Create an organization"
+              variant="secondary"
+              onPress={() => router.push("/org/create")}
+            />
+          ))}
         {isAdmin && (
           <>
             <Button

@@ -48,7 +48,7 @@ export default function CreateEventDetailsScreen() {
 
   return (
     <Screen scroll>
-      <StepHeader step={2} total={4} title="The details" />
+      <StepHeader step={2} total={5} title="The details" />
 
       <Controller
         control={control}

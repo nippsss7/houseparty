@@ -130,12 +130,12 @@ export default function CreateEventWhereWhenScreen() {
     }
     setFieldErrors({});
     setLocationSchedule(parsed.data);
-    router.push("/(tabs)/create/photos");
+    router.push("/(tabs)/create/tickets");
   };
 
   return (
     <Screen scroll>
-      <StepHeader step={3} total={4} title="Where & when" />
+      <StepHeader step={3} total={5} title="Where & when" />
 
       <View style={styles.addressWrap}>
         <TextField
@@ -258,7 +258,7 @@ export default function CreateEventWhereWhenScreen() {
       {!!fieldErrors.endAt && <Text style={styles.error}>{fieldErrors.endAt}</Text>}
 
       <View style={styles.spacer} />
-      <Button label="Next: Photos" onPress={onNext} />
+      <Button label="Next: Tickets" onPress={onNext} />
       <View style={styles.bottomPad} />
     </Screen>
   );
